@@ -1,3 +1,5 @@
+// pages/DailyQuizMenu.js ✅ FULL FILE (design NOT changed, only added sinFont styles)
+
 import React, { useMemo } from "react";
 import {
   View,
@@ -17,11 +19,12 @@ import {
   useGetMyAttemptsByPaperQuery,
 } from "../app/attemptApi";
 import { useGetMyPaymentStatusQuery } from "../app/paymentApi";
+import useT from "../app/i18n/useT";
 
 const PRIMARY = "#1153ec";
 const RED_BTN = "#DC2626";
 
-const PaymentBadge = ({ payment, amount }) => {
+const PaymentBadge = ({ payment, amount, T, isSi, sinFont }) => {
   const type = String(payment || "free").toLowerCase();
   const isPaid = type === "paid";
   const isPractice = type === "practise" || type === "practice";
@@ -29,15 +32,24 @@ const PaymentBadge = ({ payment, amount }) => {
   const bg = isPaid ? "#FEE2E2" : isPractice ? "#FEF3C7" : "#DCFCE7";
   const text = isPaid ? "#991B1B" : isPractice ? "#92400E" : "#166534";
 
+  // ✅ translate label words ONLY. Keep amount number NOT translated.
   const label = isPaid
-    ? `PAID • Rs ${Number(amount || 0)}`
+    ? `${T.paid} • Rs ${Number(amount || 0)}`
     : isPractice
-    ? "PRACTISE"
-    : "FREE";
+    ? T.practise
+    : T.free;
 
   return (
     <View style={[styles.badgeTopRight, { backgroundColor: bg }]}>
-      <Text style={[styles.badgeText, { color: text }]}>{label}</Text>
+      <Text
+        style={[
+          styles.badgeText,
+          { color: text },
+          isSi ? sinFont("bold") : null,
+        ]}
+      >
+        {label}
+      </Text>
     </View>
   );
 };
@@ -50,6 +62,9 @@ const PaperCard = ({
   onViewResult,
   onPayNow,
   starting,
+  T,
+  isSi,
+  sinFont,
 }) => {
   const payType = String(paper.payment || "free").toLowerCase();
   const isPaidPaper = payType === "paid";
@@ -60,7 +75,9 @@ const PaperCard = ({
   const isOver = attemptsLeft <= 0;
 
   const showPayNow = isPaidPaper && !unlocked;
-  const btnText = showPayNow ? "PAY NOW" : isOver ? "View Result" : "Attempt Now";
+
+  // ✅ translate button labels ONLY
+  const btnText = showPayNow ? T.payNow : isOver ? T.viewResult : T.attemptNow;
 
   const onPress = () => {
     if (showPayNow) return onPayNow?.(paper);
@@ -70,23 +87,35 @@ const PaperCard = ({
 
   return (
     <View style={styles.card}>
-      <PaymentBadge payment={paper.payment} amount={paper.amount} />
+      <PaymentBadge
+        payment={paper.payment}
+        amount={paper.amount}
+        T={T}
+        isSi={isSi}
+        sinFont={sinFont}
+      />
 
+      {/* ❌ paper.title is backend data => DO NOT translate */}
       <Text style={styles.cardTitle}>{paper.title}</Text>
 
       <View style={styles.metaRowCenter}>
         <View style={styles.metaItem}>
           <Ionicons name="help-circle-outline" size={16} color="#64748B" />
-          <Text style={styles.metaText}>{paper.mcqCount} MCQs</Text>
+          <Text style={[styles.metaText, isSi ? sinFont("bold") : null]}>
+            {paper.mcqCount} {T.mcqs}
+          </Text>
         </View>
 
         <View style={styles.metaItem}>
           <Ionicons name="time-outline" size={16} color="#64748B" />
-          <Text style={styles.metaText}>{paper.timeMin} min</Text>
+          <Text style={[styles.metaText, isSi ? sinFont("bold") : null]}>
+            {paper.timeMin} {T.min}
+          </Text>
         </View>
 
         <View style={styles.metaItem}>
           <Ionicons name="repeat-outline" size={16} color="#64748B" />
+          {/* "left" not requested earlier; kept English intentionally */}
           <Text style={styles.metaText}>
             {Math.max(attemptsLeft, 0)}/{paper.attempts} left
           </Text>
@@ -104,8 +133,14 @@ const PaperCard = ({
           !showPayNow && isOver && styles.btnLight,
         ]}
       >
-        <Text style={[styles.btnText, !showPayNow && isOver && styles.btnTextDark]}>
-          {starting ? "Please wait..." : btnText}
+        <Text
+          style={[
+            styles.btnText,
+            !showPayNow && isOver && styles.btnTextDark,
+            isSi ? sinFont("bold") : null,
+          ]}
+        >
+          {starting ? T.pleaseWait : btnText}
         </Text>
 
         <Ionicons
@@ -130,6 +165,9 @@ const PaperCardWithContext = ({
   onViewResult,
   onPayNow,
   starting,
+  T,
+  isSi,
+  sinFont,
 }) => {
   const { data: attemptsContext, isFetching: attemptsFetching } =
     useGetMyAttemptsByPaperQuery({ paperId: paper.id }, { skip: !paper?.id });
@@ -150,20 +188,46 @@ const PaperCardWithContext = ({
     <PaperCard
       paper={paper}
       attemptsContext={safeAttempts}
-      paymentContext={needsPayCheck ? safePay : { required: false, unlocked: true }}
+      paymentContext={
+        needsPayCheck ? safePay : { required: false, unlocked: true }
+      }
       onAttemptNow={onAttemptNow}
       onViewResult={onViewResult}
       onPayNow={onPayNow}
       starting={starting}
+      T={T}
+      isSi={isSi}
+      sinFont={sinFont}
     />
   );
 };
 
 export default function DailyQuizMenu({ route }) {
   const navigation = useNavigation();
+  const { t, lang, sinFont } = useT();
+  const isSi = lang === "si";
+
+  // ✅ Only labels for this page
+  const T = useMemo(
+    () => ({
+      pageTitle: t("dqTitle"),
+      payNow: t("payNow"),
+      attemptNow: t("attemptNow"),
+      pleaseWait: t("pleaseWait"),
+      mcqs: t("mcqs"),
+      min: t("min"),
+      paid: t("paid"),
+      practise: t("practise"),
+      free: t("free"),
+      viewResult: t("viewResult"),
+    }),
+    [t]
+  );
+
   const { gradeNumber, stream, subject } = route?.params || {};
 
-  const canFetch = !!gradeNumber && !!subject && (Number(gradeNumber) < 12 || !!stream);
+  const canFetch =
+    !!gradeNumber && !!subject && (Number(gradeNumber) < 12 || !!stream);
 
   const { data: papersRaw = [], isLoading, isFetching, error } =
     useGetPublishedPapersQuery(
@@ -179,7 +243,7 @@ export default function DailyQuizMenu({ route }) {
   const PAPERS = useMemo(() => {
     return (Array.isArray(papersRaw) ? papersRaw : []).map((p) => ({
       id: String(p?._id || ""),
-      title: String(p?.paperTitle || "Daily Quiz"),
+      title: String(p?.paperTitle || "Daily Quiz"), // backend title (don’t translate)
       mcqCount: Number(p?.questionCount || 0),
       timeMin: Number(p?.timeMinutes || 0),
       attempts: Number(p?.attempts || 1),
@@ -235,7 +299,9 @@ export default function DailyQuizMenu({ route }) {
 
   return (
     <View style={styles.screen}>
-      <Text style={styles.pageTitle}>Daily Quiz</Text>
+      <Text style={[styles.pageTitle, isSi ? sinFont("bold") : null]}>
+        {T.pageTitle}
+      </Text>
 
       {!canFetch ? (
         <View style={styles.center}>
@@ -259,7 +325,10 @@ export default function DailyQuizMenu({ route }) {
           </Text>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
+        >
           {PAPERS.map((p) => (
             <PaperCardWithContext
               key={p.id}
@@ -268,6 +337,9 @@ export default function DailyQuizMenu({ route }) {
               onViewResult={onViewResult}
               onPayNow={onPayNow}
               starting={starting}
+              T={T}
+              isSi={isSi}
+              sinFont={sinFont}
             />
           ))}
         </ScrollView>
@@ -314,7 +386,6 @@ const styles = StyleSheet.create({
 
   badgeText: { fontWeight: "900", fontSize: 10 },
 
-  // same custom font feel as Lessons page lessonTitle / descText
   cardTitle: {
     marginTop: 2,
     fontSize: 15,

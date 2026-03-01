@@ -1,3 +1,8 @@
+// pages/Registersubject.js ✅ FULL CODE
+// ✅ Sinhala "Completed" badge shows EXACT unicode: "සම්පූර්ණයි"
+// ✅ ONLY label translation + paperType fetched mapping
+// ✅ Keep all other texts English (Loading/Failed/Try again/No completed...)
+// ✅ Legacy Sinhala font applied ONLY to translated labels (same as your system)
 import React, { useMemo } from "react";
 import {
   View,
@@ -9,6 +14,7 @@ import {
 } from "react-native";
 
 import { useGetMyCompletedPapersQuery } from "../app/attemptApi";
+import useT from "../app/i18n/useT";
 
 const pad2 = (n) => String(n).padStart(2, "0");
 
@@ -25,6 +31,11 @@ const formatTimeDot = (iso) => {
 };
 
 export default function Registersubject() {
+  const { t, lang, sinFont } = useT();
+  const isSi = lang === "si";
+  const LBL_REG = isSi ? sinFont("regular") : null;
+  const LBL_BOLD = isSi ? sinFont("bold") : null;
+
   const { data, isLoading, isError, refetch } = useGetMyCompletedPapersQuery();
 
   const list = useMemo(() => {
@@ -32,24 +43,57 @@ export default function Registersubject() {
     return Array.isArray(items) ? items : [];
   }, [data]);
 
+  // ✅ translate ONLY paperType fetched value (4 options) when Sinhala
+  const mapPaperType = (paperType) => {
+    const v = String(paperType || "").trim();
+
+    if (!isSi) return v || "-";
+
+    const key =
+      v === "Daily Quiz"
+        ? "paperTypeDailyQuiz"
+        : v === "Topic wise paper"
+        ? "paperTypeTopicWise"
+        : v === "Model paper"
+        ? "paperTypeModelPaper"
+        : v === "Past paper"
+        ? "paperTypePastPaper"
+        : null;
+
+    return key ? t(key) : v || "-";
+  };
+
+  // ✅ ONLY label translation / fixed label texts
+  const UI = {
+    pageTitle: isSi ? t("completedPapersTitle") : "Completed Papers",
+    completed: isSi ? "සම්පූර්ණයි" : "Completed", // ✅ EXACT text you want
+    paperType: isSi ? t("paperTypeLabel") : "Paper Type",
+    date: isSi ? t("completedDate") : "Date",
+    time: isSi ? t("completedTime") : "Time",
+  };
+
   return (
     <View style={styles.screen}>
-      <Text style={styles.pageTitle}>Completed Papers</Text>
+      <Text style={[styles.pageTitle, LBL_BOLD]}>{UI.pageTitle}</Text>
 
       {isLoading ? (
         <View style={styles.stateWrap}>
           <ActivityIndicator size="large" color="#214294" />
+          {/* keep English */}
           <Text style={styles.infoText}>Loading completed papers...</Text>
         </View>
       ) : isError ? (
         <View style={styles.stateCard}>
+          {/* keep English */}
           <Text style={styles.errTitle}>Failed to load completed papers</Text>
           <Pressable onPress={() => refetch?.()} style={styles.retryBtn}>
+            {/* keep English */}
             <Text style={styles.tryAgain}>Try again</Text>
           </Pressable>
         </View>
       ) : list.length === 0 ? (
         <View style={styles.stateCard}>
+          {/* keep English */}
           <Text style={styles.centerInfo}>No completed papers yet.</Text>
         </View>
       ) : (
@@ -59,7 +103,8 @@ export default function Registersubject() {
         >
           {list.map((p, idx) => {
             const title = p?.paperTitle || "Paper";
-            const paperType = p?.paperType || "-";
+            const paperTypeRaw = p?.paperType || "-";
+            const paperType = mapPaperType(paperTypeRaw);
             const date = formatDate(p?.completedAt);
             const time = formatTimeDot(p?.completedAt);
 
@@ -74,15 +119,18 @@ export default function Registersubject() {
                   </View>
 
                   <View style={styles.statusBadge}>
-                    <Text style={styles.statusText}>Completed</Text>
+                    <Text style={[styles.statusText, LBL_BOLD]}>{UI.completed}</Text>
                   </View>
                 </View>
 
                 {/* Paper Type Section */}
                 <View style={styles.typeRow}>
-                  <Text style={styles.typeLabel}>Paper Type</Text>
+                  <Text style={[styles.typeLabel, LBL_REG]}>{UI.paperType}</Text>
                   <View style={styles.typeBadge}>
-                    <Text style={styles.typeBadgeText} numberOfLines={1}>
+                    <Text
+                      style={[styles.typeBadgeText, LBL_BOLD]}
+                      numberOfLines={1}
+                    >
                       {paperType}
                     </Text>
                   </View>
@@ -94,12 +142,12 @@ export default function Registersubject() {
                 {/* Bottom Info */}
                 <View style={styles.infoGrid}>
                   <View style={styles.infoCard}>
-                    <Text style={styles.infoHeading}>Date</Text>
+                    <Text style={[styles.infoHeading, LBL_REG]}>{UI.date}</Text>
                     <Text style={styles.infoValue}>{date}</Text>
                   </View>
 
                   <View style={styles.infoCard}>
-                    <Text style={styles.infoHeading}>Time</Text>
+                    <Text style={[styles.infoHeading, LBL_REG]}>{UI.time}</Text>
                     <Text style={styles.infoValue}>{time}</Text>
                   </View>
                 </View>

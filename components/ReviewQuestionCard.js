@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import useT from "../app/i18n/useT";
 
 const TEXT_DARK = "#0F172A";
 const MUTED = "#64748B";
@@ -18,6 +19,25 @@ export default function ReviewQuestionCard({
   onExplainVideo,
   onExplainLogic,
 }) {
+  const { t, lang, sinFont } = useT();
+  const isSi = lang === "si";
+
+  const T = useMemo(
+    () => ({
+      question: t("questionLbl2"),
+      correct: t("correctLbl"),
+      wrong: t("wrongLbl"),
+      hideAnswer: t("hideAnswerLbl"),
+      showAnswer: t("showAnswerLbl"),
+      yourAnswer: t("yourAnswerLbl"),
+      correctAnswer: t("correctAnswerLbl"),
+      explainLogic: t("explainLogicLbl"),
+      explainVideo: t("explainVideoLbl"),
+      correctAnswers: t("correctAnswersLbl"),
+    }),
+    [t]
+  );
+
   const isCorrect = !!item?.isCorrect;
 
   const correctAnswers =
@@ -29,10 +49,21 @@ export default function ReviewQuestionCard({
 
   const userAnswer = item?.selectedAnswer || "";
 
+  const correctAnswersLabelStyle = [
+    styles.lineLabel,
+    styles.lineLabelGreen,
+    isSi ? sinFont("bold") : null,
+  ];
+
   return (
     <View style={styles.card}>
       <View style={styles.headRow}>
-        <Text style={styles.qNo}>Q{item?.questionNumber}</Text>
+        {/* ✅ Sinhala font ONLY for label, not ":" */}
+        <Text style={styles.qNo}>
+          <Text style={isSi ? sinFont("bold") : null}>{T.question}</Text>
+          {" : "}
+          {item?.questionNumber}
+        </Text>
 
         <View style={[styles.badge, isCorrect ? styles.badgeGreen : styles.badgeRed]}>
           <Ionicons
@@ -40,7 +71,9 @@ export default function ReviewQuestionCard({
             size={12}
             color="#fff"
           />
-          <Text style={styles.badgeText}>{isCorrect ? "Correct" : "Wrong"}</Text>
+          <Text style={[styles.badgeText, isSi ? sinFont("bold") : null]}>
+            {isCorrect ? T.correct : T.wrong}
+          </Text>
         </View>
       </View>
 
@@ -49,8 +82,8 @@ export default function ReviewQuestionCard({
       </Text>
 
       <Pressable onPress={onToggleReveal} style={styles.revealBtn}>
-        <Text style={styles.revealText}>
-          {revealed ? "Hide Answer" : "Show Answer"}
+        <Text style={[styles.revealText, isSi ? sinFont("bold") : null]}>
+          {revealed ? T.hideAnswer : T.showAnswer}
         </Text>
         <Ionicons
           name={revealed ? "chevron-up" : "chevron-down"}
@@ -62,7 +95,9 @@ export default function ReviewQuestionCard({
       {revealed && (
         <View style={styles.revealBox}>
           <View style={styles.answerRow}>
-            <Text style={styles.lineLabel}>Your Answer</Text>
+            <Text style={[styles.lineLabel, isSi ? sinFont("bold") : null]}>
+              {T.yourAnswer}
+            </Text>
             <Text
               style={[
                 styles.lineValue,
@@ -77,7 +112,9 @@ export default function ReviewQuestionCard({
 
           {correctAnswers.length <= 1 ? (
             <View style={styles.answerRow}>
-              <Text style={styles.lineLabel}>Correct Answer</Text>
+              <Text style={[styles.lineLabel, isSi ? sinFont("bold") : null]}>
+                {T.correctAnswer}
+              </Text>
               <Text
                 style={[styles.lineValue, styles.fetchText, { color: GREEN }]}
                 numberOfLines={2}
@@ -87,7 +124,9 @@ export default function ReviewQuestionCard({
             </View>
           ) : (
             <View style={styles.answerRow}>
-              <Text style={styles.lineLabel}>Correct Answers</Text>
+              {/* ✅ Correct Answers label must be GREEN + BOLD */}
+              <Text style={correctAnswersLabelStyle}>{T.correctAnswers}</Text>
+
               <Text
                 style={[styles.lineValue, styles.fetchText, { color: GREEN }]}
                 numberOfLines={3}
@@ -100,12 +139,16 @@ export default function ReviewQuestionCard({
           <View style={styles.actions}>
             <Pressable onPress={onExplainLogic} style={styles.btnDark}>
               <Ionicons name="bulb-outline" size={14} color="#FFFFFF" />
-              <Text style={styles.btnDarkText}>Explain Logic</Text>
+              <Text style={[styles.btnDarkText, isSi ? sinFont("bold") : null]}>
+                {T.explainLogic}
+              </Text>
             </Pressable>
 
             <Pressable onPress={onExplainVideo} style={styles.btnBlue}>
               <Ionicons name="play-circle-outline" size={14} color="#FFFFFF" />
-              <Text style={styles.btnBlueText}>Explain Video</Text>
+              <Text style={[styles.btnBlueText, isSi ? sinFont("bold") : null]}>
+                {T.explainVideo}
+              </Text>
             </Pressable>
           </View>
         </View>
@@ -150,13 +193,8 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
 
-  badgeGreen: {
-    backgroundColor: GREEN,
-  },
-
-  badgeRed: {
-    backgroundColor: RED,
-  },
+  badgeGreen: { backgroundColor: GREEN },
+  badgeRed: { backgroundColor: RED },
 
   badgeText: {
     color: "#fff",
@@ -217,6 +255,12 @@ const styles = StyleSheet.create({
     marginBottom: 3,
     textTransform: "uppercase",
     letterSpacing: 0.3,
+  },
+
+  // ✅ GREEN label for "Correct Answers"
+  lineLabelGreen: {
+    color: GREEN,
+    fontWeight: "900",
   },
 
   lineValue: {

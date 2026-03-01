@@ -1,4 +1,3 @@
-// pages/Pastpapers.js
 import React, { useMemo, useState } from "react";
 import { View, Text, StyleSheet, Pressable, ActivityIndicator } from "react-native";
 import { Picker } from "@react-native-picker/picker";
@@ -6,15 +5,18 @@ import { useNavigation } from "@react-navigation/native";
 
 import useUser from "../app/hooks/useUser";
 import { useGetGradeDetailQuery } from "../app/gradeApi";
+import useT from "../app/i18n/useT";
 
 const norm = (v) => String(v || "").trim().toLowerCase();
 
 export default function PastPapers() {
   const navigation = useNavigation();
   const { user } = useUser();
+  const { t, lang, sinFont } = useT();
+  const isSi = lang === "si";
+
   const [selectedSubject, setSelectedSubject] = useState("");
 
-  // ✅ get grade/level/stream from backend user fields
   const level = user?.selectedLevel || null;
   const gradeNumber = Number(user?.selectedGradeNumber || 0) || null;
   const stream = user?.selectedStream || null;
@@ -27,23 +29,27 @@ export default function PastPapers() {
   const subjectsToShow = useMemo(() => {
     if (!gradeDoc) return [];
 
-    // grades 1..11
     if (!isAL) {
       const list = Array.isArray(gradeDoc?.subjects) ? gradeDoc.subjects : [];
       return list.map((x) => x?.subject).filter(Boolean);
     }
 
-    // grades 12/13 => stream subjects
     const streams = Array.isArray(gradeDoc?.streams) ? gradeDoc.streams : [];
     const streamObj = streams.find((s) => norm(s?.stream) === norm(stream));
-    const streamSubjects = Array.isArray(streamObj?.subjects)
-      ? streamObj.subjects
-      : [];
-
+    const streamSubjects = Array.isArray(streamObj?.subjects) ? streamObj.subjects : [];
     return streamSubjects.map((x) => x?.subject).filter(Boolean);
   }, [gradeDoc, isAL, stream]);
 
   const canStart = !!gradeNumber && !!selectedSubject && (!isAL || !!stream);
+
+  const UI = {
+    title: isSi ? t("ppTitle") : "Past Papers",
+    selectSubject: isSi ? t("selectSubject") : "Select Subject",
+    grade: isSi ? t("gradeLbl") : "Grade",
+    stream: isSi ? t("streamLbl") : "Stream",
+    subject: isSi ? t("subjectLbl") : "Subject",
+    continue: isSi ? t("continueLbl") : "Continue",
+  };
 
   const onContinue = () => {
     if (!canStart) return;
@@ -64,10 +70,7 @@ export default function PastPapers() {
         <Text style={styles.helperText}>
           Please select your grade (and stream for A/L) first.
         </Text>
-        <Pressable
-          style={styles.primaryBtn}
-          onPress={() => navigation.navigate("MainSelectgrade")}
-        >
+        <Pressable style={styles.primaryBtn} onPress={() => navigation.navigate("MainSelectgrade")}>
           <Text style={styles.primaryBtnText}>Go to Grade Selection</Text>
         </Pressable>
       </View>
@@ -79,10 +82,7 @@ export default function PastPapers() {
       <View style={styles.center}>
         <Text style={styles.title}>Stream not selected</Text>
         <Text style={styles.helperText}>Please select your stream first.</Text>
-        <Pressable
-          style={styles.primaryBtn}
-          onPress={() => navigation.navigate("MainSelectgrade")}
-        >
+        <Pressable style={styles.primaryBtn} onPress={() => navigation.navigate("MainSelectgrade")}>
           <Text style={styles.primaryBtnText}>Go to Grade Selection</Text>
         </Pressable>
       </View>
@@ -121,20 +121,21 @@ export default function PastPapers() {
   return (
     <View style={styles.screen}>
       <View style={styles.card}>
-        <Text style={styles.title}>Past Papers</Text>
-        <Text style={styles.subTitle}>Select Subject</Text>
+        <Text style={[styles.title, isSi ? sinFont("bold") : null]}>{UI.title}</Text>
+        <Text style={[styles.subTitle, isSi ? sinFont("regular") : null]}>{UI.selectSubject}</Text>
 
-        <Text style={styles.infoRow}>
-          Grade: <Text style={styles.bold}>{gradeNumber}</Text>
+        <Text style={[styles.infoRow, isSi ? sinFont("regular") : null]}>
+          {UI.grade} <Text style={styles.bold}>{gradeNumber}</Text>
         </Text>
 
         {isAL && (
-          <Text style={styles.infoRow}>
-            Stream: <Text style={styles.bold}>{stream}</Text>
+          <Text style={[styles.infoRow, isSi ? sinFont("regular") : null]}>
+            {UI.stream} <Text style={styles.bold}>{stream}</Text>
           </Text>
         )}
 
-        <Text style={styles.label}>Subject</Text>
+        <Text style={[styles.label, isSi ? sinFont("bold") : null]}>{UI.subject}</Text>
+
         <View style={styles.pickerWrap}>
           <Picker
             selectedValue={selectedSubject}
@@ -158,39 +159,18 @@ export default function PastPapers() {
             pressed && canStart && styles.pressed,
           ]}
         >
-          <Text style={styles.startBtnText}>Continue</Text>
+          <Text style={[styles.startBtnText, isSi ? sinFont("bold") : null]}>{UI.continue}</Text>
         </Pressable>
 
-        {!canStart && (
-          <Text style={styles.helperText}>Please select a subject.</Text>
-        )}
+       
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: "#F8FAFC",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 16,
-  },
-  card: {
-    width: "100%",
-    maxWidth: 420,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 18,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 3,
-  },
+  screen: { flex: 1, backgroundColor: "#F8FAFC", alignItems: "center", justifyContent: "center", padding: 16 },
+  card: { width: "100%", maxWidth: 420, backgroundColor: "#FFFFFF", borderRadius: 18, padding: 16, borderWidth: 1, borderColor: "#E2E8F0", shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 3 },
   title: { fontSize: 20, fontWeight: "900", color: "#0F172A", textAlign: "center" },
   subTitle: { fontSize: 13, color: "#334155", textAlign: "center", marginTop: 6, marginBottom: 14 },
   infoRow: { fontSize: 12, fontWeight: "700", color: "#334155", textAlign: "center", marginTop: 4 },

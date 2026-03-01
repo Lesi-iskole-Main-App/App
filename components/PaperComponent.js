@@ -1,22 +1,38 @@
+// components/PaperComponent.js ✅ FULL FILE
+// ✅ only translate "Question" label passed from PaperPage
+// ✅ IMPORTANT: FMEmaneex converts ":" and "/" to Sinhala glyphs
+// ✅ So apply sinFont ONLY to the label part, NOT to "1 / 4"
+
 import React from "react";
 import { View, Text, StyleSheet, Pressable } from "react-native";
+import useT from "../app/i18n/useT";
 
 const TEXT_DARK = "#0F172A";
 const MUTED = "#64748B";
 const BORDER = "#E2E8F0";
 const BLUE = "#2563EB";
 
-export default function PaperComponent({ index, total, question, selectedOption, onSelect }) {
+export default function PaperComponent({
+  index,
+  total,
+  question,
+  selectedOption,
+  onSelect,
+  questionLbl, // ✅ translated label only
+}) {
+  const { lang, sinFont } = useT();
+  const isSi = lang === "si";
+
   const q = question || {};
   const options = Array.isArray(q.answers) ? q.answers : [];
 
   return (
     <View style={styles.card}>
+      {/* ✅ Sinhala font ONLY for label; keep numbers + "/" in default font */}
       <Text style={styles.topCount}>
-        Question {index + 1} / {total}
+        <Text style={isSi ? sinFont("bold") : null}>{questionLbl}</Text>{" "}
+        {index + 1} / {total}
       </Text>
-
-     
 
       <Text style={styles.qText}>{q.question}</Text>
 
@@ -41,8 +57,6 @@ export default function PaperComponent({ index, total, question, selectedOption,
           );
         })}
       </View>
-
-      
     </View>
   );
 }
@@ -74,7 +88,6 @@ const styles = StyleSheet.create({
     color: BLUE,
   },
 
-  // question text font
   qText: {
     marginTop: 10,
     fontSize: 15,
@@ -113,7 +126,6 @@ const styles = StyleSheet.create({
     backgroundColor: BLUE,
   },
 
-  // answers text font
   optText: {
     flex: 1,
     fontSize: 13,

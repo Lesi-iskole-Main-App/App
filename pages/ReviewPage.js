@@ -19,11 +19,13 @@ import {
   useGetAttemptReviewQuery,
   useStartAttemptMutation,
 } from "../app/attemptApi";
+import useT from "../app/i18n/useT";
 
 const BG = "#FFFFFF";
 const TEXT_DARK = "#0F172A";
 const MUTED = "#94A3B8";
 const BLUE = "#2563EB";
+const GREEN = "#16A34A";
 
 function getYouTubeId(url = "") {
   try {
@@ -44,6 +46,34 @@ export default function ReviewPage({ navigation, route }) {
   const attemptId = route?.params?.attemptId || "";
   const title = route?.params?.title || "Daily Quiz";
 
+  const { t, lang, sinFont } = useT();
+  const isSi = lang === "si";
+
+  const T = useMemo(
+    () => ({
+      correctAnswers: t("correctAnswersLbl"),
+      reviewNotAvailable: t("reviewNotAvailableLbl"),
+      examPerformance: t("examPerformanceLbl"),
+      home: t("homeLbl"),
+      improvementNeed: t("improvementNeedLbl"),
+      allCorrect: t("allCorrectLbl"),
+      explainVideo: t("explainVideoLbl"),
+      stillNotAvailable: t("stillNotAvailableLbl"),
+      explainLogic: t("explainLogicLbl"),
+      explanation: t("explanationLbl"),
+      close: t("closeLbl"),
+      loadingReview: t("loadingReviewLbl"),
+      retry: t("retryLbl"),
+      starting: t("startingLbl"),
+      retryBtn: t("retryBtnLbl"),
+      startNextAttemptTitle: t("startNextAttemptTitle"),
+      startNextAttemptYes: t("startNextAttemptYes"),
+      cancel: t("cancelLbl"),
+      cannotStartTitle: t("cannotStartTitle"),
+    }),
+    [t]
+  );
+
   const { data, isLoading, isFetching, error, refetch } = useGetAttemptReviewQuery(
     { attemptId },
     { skip: !attemptId }
@@ -53,7 +83,9 @@ export default function ReviewPage({ navigation, route }) {
   const wrongFirst = Array.isArray(data?.wrongFirst) ? data.wrongFirst : [];
   const correctAfter = Array.isArray(data?.correctAfter) ? data.correctAfter : [];
 
-  const total = Number(result?.totalQuestions || (wrongFirst.length + correctAfter.length) || 0);
+  const total = Number(
+    result?.totalQuestions || wrongFirst.length + correctAfter.length || 0
+  );
   const correctCount = Number(result?.correctCount || correctAfter.length || 0);
 
   const scorePercent = Number(
@@ -103,7 +135,18 @@ export default function ReviewPage({ navigation, route }) {
 
   const renderItem = ({ item, index }) => {
     if (item?.__type === "SECTION_CORRECT") {
-      return <Text style={styles.sectionTitle}>Correct Answers (After)</Text>;
+      // ✅ Correct Answers section header = GREEN + BOLD
+      return (
+        <Text
+          style={[
+            styles.sectionTitle,
+            styles.sectionTitleGreen,
+            isSi ? sinFont("bold") : null,
+          ]}
+        >
+          {T.correctAnswers}
+        </Text>
+      );
     }
 
     const key = String(item?._id || index);
@@ -126,12 +169,12 @@ export default function ReviewPage({ navigation, route }) {
     if (!canRetry) return;
 
     Alert.alert(
-      "Start next attempt?",
+      T.startNextAttemptTitle,
       `Do you want to practice attempt ${nextAttemptNo}?\n\nAttempts: ${attemptNo}/${attemptsAllowed} completed`,
       [
-        { text: "Cancel", style: "cancel" },
+        { text: T.cancel, style: "cancel" },
         {
-          text: "Yes, Start",
+          text: T.startNextAttemptYes,
           onPress: async () => {
             try {
               const res = await startAttempt({ paperId }).unwrap();
@@ -145,7 +188,10 @@ export default function ReviewPage({ navigation, route }) {
                 timeMin: Number(res?.paper?.timeMinutes || 10),
               });
             } catch (e) {
-              Alert.alert("Cannot start", e?.data?.message || e?.message || "Try again");
+              Alert.alert(
+                T.cannotStartTitle,
+                e?.data?.message || e?.message || "Try again"
+              );
             }
           },
         },
@@ -157,7 +203,9 @@ export default function ReviewPage({ navigation, route }) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={BLUE} />
-        <Text style={styles.helper}>Loading review...</Text>
+        <Text style={[styles.helper, isSi ? sinFont("bold") : null]}>
+          {T.loadingReview}
+        </Text>
       </View>
     );
   }
@@ -165,9 +213,13 @@ export default function ReviewPage({ navigation, route }) {
   if (error) {
     return (
       <View style={styles.center}>
-        <Text style={styles.helper}>Review not available</Text>
+        <Text style={[styles.helper, isSi ? sinFont("bold") : null]}>
+          {T.reviewNotAvailable}
+        </Text>
         <Pressable style={styles.retryBtn} onPress={refetch}>
-          <Text style={styles.retryText}>Retry</Text>
+          <Text style={[styles.retryText, isSi ? sinFont("bold") : null]}>
+            {T.retryBtn}
+          </Text>
         </Pressable>
       </View>
     );
@@ -178,17 +230,26 @@ export default function ReviewPage({ navigation, route }) {
       <View style={styles.container}>
         <View style={styles.scoreWrap}>
           <Text style={styles.scoreText}>{Math.round(scorePercent)}%</Text>
-          <Text style={styles.scoreSub}>EXAM PERFORMANCE</Text>
+
+          <Text style={[styles.scoreSub, isSi ? sinFont("bold") : null]}>
+            {T.examPerformance}
+          </Text>
 
           <View style={styles.scoreBtns}>
             <Pressable onPress={onHome} style={styles.btnLight}>
-              <Text style={styles.btnLightText}>Home</Text>
+              <Text style={[styles.btnLightText, isSi ? sinFont("bold") : null]}>
+                {T.home}
+              </Text>
             </Pressable>
 
             {canRetry ? (
-              <Pressable onPress={onRetry} style={styles.btnBlue} disabled={starting}>
-                <Text style={styles.btnBlueText}>
-                  {starting ? "Starting..." : "Retry"}
+              <Pressable
+                onPress={onRetry}
+                style={styles.btnBlue}
+                disabled={starting}
+              >
+                <Text style={[styles.btnBlueText, isSi ? sinFont("bold") : null]}>
+                  {starting ? T.starting : T.retry}
                 </Text>
               </Pressable>
             ) : null}
@@ -196,9 +257,21 @@ export default function ReviewPage({ navigation, route }) {
         </View>
 
         {wrongFirst.length > 0 ? (
-          <Text style={styles.sectionTitle}>Wrong Answers (Review First)</Text>
+          // ✅ improvement need = BOLD (no green requested)
+          <Text style={[styles.sectionTitle, styles.sectionTitleBold, isSi ? sinFont("bold") : null]}>
+            {T.improvementNeed}
+          </Text>
         ) : (
-          <Text style={styles.sectionTitle}>No wrong answers</Text>
+          // ✅ Your All answers correct = GREEN + BOLD
+          <Text
+            style={[
+              styles.sectionTitle,
+              styles.sectionTitleGreen,
+              isSi ? sinFont("bold") : null,
+            ]}
+          >
+            {T.allCorrect}
+          </Text>
         )}
 
         <FlatList
@@ -218,7 +291,9 @@ export default function ReviewPage({ navigation, route }) {
                   <View style={styles.modalIconCircle}>
                     <Ionicons name="play-circle-outline" size={18} color={BLUE} />
                   </View>
-                  <Text style={styles.modalTitle}>Explain Video</Text>
+                  <Text style={[styles.modalTitle, isSi ? sinFont("bold") : null]}>
+                    {T.explainVideo}
+                  </Text>
                 </View>
 
                 <Pressable onPress={() => setVideoOpen(false)} hitSlop={10}>
@@ -230,7 +305,9 @@ export default function ReviewPage({ navigation, route }) {
                 {videoId ? (
                   <YoutubePlayer height={210} play={false} videoId={videoId} />
                 ) : (
-                  <Text style={styles.modalBody}>No/Invalid YouTube URL</Text>
+                  <Text style={[styles.modalBody, isSi ? sinFont("bold") : null]}>
+                    {T.stillNotAvailable}
+                  </Text>
                 )}
               </View>
             </View>
@@ -246,7 +323,9 @@ export default function ReviewPage({ navigation, route }) {
                   <View style={styles.modalIconCircle}>
                     <Ionicons name="bulb-outline" size={18} color={BLUE} />
                   </View>
-                  <Text style={styles.modalTitle}>Explain Logic</Text>
+                  <Text style={[styles.modalTitle, isSi ? sinFont("bold") : null]}>
+                    {T.explainLogic}
+                  </Text>
                 </View>
 
                 <Pressable onPress={() => setLogicOpen(false)} hitSlop={10}>
@@ -255,7 +334,9 @@ export default function ReviewPage({ navigation, route }) {
               </View>
 
               <View style={styles.logicCard}>
-                <Text style={styles.logicLabel}>Explanation</Text>
+                <Text style={[styles.logicLabel, isSi ? sinFont("bold") : null]}>
+                  {T.explanation}
+                </Text>
 
                 <ScrollView
                   showsVerticalScrollIndicator={false}
@@ -265,8 +346,15 @@ export default function ReviewPage({ navigation, route }) {
                 </ScrollView>
               </View>
 
-              <Pressable onPress={() => setLogicOpen(false)} style={styles.logicCloseBtn}>
-                <Text style={styles.logicCloseBtnText}>Close</Text>
+              <Pressable
+                onPress={() => setLogicOpen(false)}
+                style={styles.logicCloseBtn}
+              >
+                <Text
+                  style={[styles.logicCloseBtnText, isSi ? sinFont("bold") : null]}
+                >
+                  {T.close}
+                </Text>
               </Pressable>
             </View>
           </View>
@@ -349,6 +437,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
 
+  // ✅ improvement need bold
+  sectionTitleBold: {
+    fontWeight: "900",
+  },
+
+  // ✅ green + bold
+  sectionTitleGreen: {
+    color: GREEN,
+    fontWeight: "900",
+  },
+
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.45)",
@@ -419,7 +518,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
 
-  // professional logic modal
   logicCard: {
     backgroundColor: "#F8FAFC",
     borderRadius: 16,

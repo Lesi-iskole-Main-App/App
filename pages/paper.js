@@ -1,9 +1,25 @@
+// pages/PaperPage.js ✅ FULL FILE
+// ✅ only translate: Question / FINISH / Next Question / Previous / Submit
+// ✅ IMPORTANT: FMEmaneex converts ":" to Sinhala glyph, so timer must NOT use sinFont()
+
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { View, Text, StyleSheet, Pressable, ActivityIndicator, Alert } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  ActivityIndicator,
+  Alert,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import PaperComponent from "../components/PaperComponent";
-import { useGetAttemptQuestionsQuery, useSaveAnswerMutation, useSubmitAttemptMutation } from "../app/attemptApi";
+import {
+  useGetAttemptQuestionsQuery,
+  useSaveAnswerMutation,
+  useSubmitAttemptMutation,
+} from "../app/attemptApi";
+import useT from "../app/i18n/useT";
 
 const BG = "#FFFFFF";
 const TEXT_DARK = "#0F172A";
@@ -26,6 +42,20 @@ function formatTime(seconds) {
 }
 
 export default function PaperPage({ navigation, route }) {
+  const { t, lang, sinFont } = useT();
+  const isSi = lang === "si";
+
+  const T = useMemo(
+    () => ({
+      question: t("questionLbl"),
+      finish: t("finishLbl"),
+      nextQuestion: t("nextQuestionLbl"),
+      previous: t("previousLbl"),
+      submit: t("submitLbl"),
+    }),
+    [t]
+  );
+
   const attemptId = route?.params?.attemptId || "";
   const paperId = route?.params?.paperId || "";
   const title = route?.params?.title || "Daily Quiz";
@@ -34,17 +64,17 @@ export default function PaperPage({ navigation, route }) {
   const finishedRef = useRef(false);
   const intervalRef = useRef(null);
 
-  const { data, isLoading, isFetching, error, refetch } = useGetAttemptQuestionsQuery(
-    { attemptId },
-    { skip: !attemptId }
-  );
+  const { data, isLoading, isFetching, error, refetch } =
+    useGetAttemptQuestionsQuery({ attemptId }, { skip: !attemptId });
 
   const [saveAnswer] = useSaveAnswerMutation();
   const [submitAttempt] = useSubmitAttemptMutation();
 
-  const questions = useMemo(() => (Array.isArray(data?.questions) ? data.questions : []), [data]);
+  const questions = useMemo(
+    () => (Array.isArray(data?.questions) ? data.questions : []),
+    [data]
+  );
   const timeMin = Number(data?.paper?.timeMinutes || fallbackTimeMin || 10);
-
   const total = questions.length;
 
   const [qIndex, setQIndex] = useState(0);
@@ -55,7 +85,8 @@ export default function PaperPage({ navigation, route }) {
     if (!questions.length) return;
     const map = {};
     questions.forEach((q, i) => {
-      if (typeof q?.selectedAnswerIndex === "number") map[i] = q.selectedAnswerIndex;
+      if (typeof q?.selectedAnswerIndex === "number")
+        map[i] = q.selectedAnswerIndex;
     });
     setAnswers(map);
     setQIndex(0);
@@ -177,11 +208,14 @@ export default function PaperPage({ navigation, route }) {
         </Pressable>
 
         <View style={styles.timerPill}>
+          {/* ✅ DO NOT use sinFont here (":" issue) */}
           <Text style={styles.timerText}>{formatTime(secondsLeft)}</Text>
         </View>
 
         <Pressable onPress={() => onFinish(false)} hitSlop={10}>
-          <Text style={styles.finishText}>FINISH</Text>
+          <Text style={[styles.finishText, isSi ? sinFont("bold") : null]}>
+            {T.finish}
+          </Text>
         </Pressable>
       </View>
 
@@ -190,6 +224,7 @@ export default function PaperPage({ navigation, route }) {
           <PaperComponent
             index={qIndex}
             total={total}
+            questionLbl={T.question}
             question={{
               id: current._id,
               question: current.question,
@@ -205,19 +240,28 @@ export default function PaperPage({ navigation, route }) {
 
       <View style={styles.bottomBar}>
         <Pressable onPress={goPrev} disabled={!canPrev}>
-          <Text style={[styles.prevText, !canPrev && styles.disabledText]}>
-            Previous
+          <Text
+            style={[
+              styles.prevText,
+              !canPrev && styles.disabledText,
+              isSi ? sinFont("bold") : null,
+            ]}
+          >
+            {T.previous}
           </Text>
         </Pressable>
 
-        {/* ✅ FIX: last question shows SUBMIT instead of disabled button */}
         {canNext ? (
           <Pressable onPress={goNext} style={styles.nextBtn}>
-            <Text style={styles.nextText}>Next Question</Text>
+            <Text style={[styles.nextText, isSi ? sinFont("bold") : null]}>
+              {T.nextQuestion}
+            </Text>
           </Pressable>
         ) : (
           <Pressable onPress={() => onFinish(false)} style={styles.nextBtn}>
-            <Text style={styles.nextText}>Submit</Text>
+            <Text style={[styles.nextText, isSi ? sinFont("bold") : null]}>
+              {T.submit}
+            </Text>
           </Pressable>
         )}
       </View>
@@ -235,7 +279,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-  timerPill: { backgroundColor: TIMER_BG, borderRadius: 999, paddingHorizontal: 16, paddingVertical: 7 },
+  timerPill: {
+    backgroundColor: TIMER_BG,
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    paddingVertical: 7,
+  },
   timerText: { color: TIMER_TEXT, fontWeight: "800", fontSize: 12 },
   finishText: { color: FINISH_BLUE, fontWeight: "800", fontSize: 12 },
   centerArea: { flex: 1, justifyContent: "center", paddingHorizontal: 16 },
@@ -262,7 +311,19 @@ const styles = StyleSheet.create({
   },
   nextText: { color: NEXT_TEXT, fontWeight: "900", fontSize: 13 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", padding: 16 },
-  helper: { marginTop: 10, textAlign: "center", color: "#64748B", fontSize: 12, fontWeight: "600" },
-  retryBtn: { marginTop: 12, backgroundColor: "#2563EB", paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12 },
+  helper: {
+    marginTop: 10,
+    textAlign: "center",
+    color: "#64748B",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  retryBtn: {
+    marginTop: 12,
+    backgroundColor: "#2563EB",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
   retryText: { color: "#fff", fontWeight: "900" },
 });

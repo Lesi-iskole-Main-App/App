@@ -2,7 +2,7 @@
 import { Platform } from "react-native";
 
 // ✅ Change this to YOUR PC IPv4 (same WiFi as phone)
-const LOCAL_PC_IP = "192.168.1.59";
+const LOCAL_PC_IP = "192.168.8.107";
 
 // ✅ Android emulator uses 10.0.2.2 to reach your PC localhost
 const ANDROID_EMULATOR_HOST = "10.0.2.2";

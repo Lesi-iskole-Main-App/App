@@ -14,6 +14,7 @@ import { useSelector } from "react-redux";
 
 import profile from "../assets/profile.png";
 import ReviewComponent from "../components/ReviewComponent";
+import useT from "../app/i18n/useT";
 
 // ✅ match your BottomNavigation height
 const TAB_BAR_HEIGHT = 90;
@@ -22,6 +23,9 @@ export default function Profile({ route }) {
   const [fontsLoaded] = useFonts({
     FMEmanee: require("../assets/fonts/FMEmaneex.ttf"),
   });
+
+  const { t, lang, sinFont } = useT();
+  const isSi = lang === "si";
 
   // ✅ get logged user from redux (no context)
   const userFromUserSlice = useSelector((s) => s?.user?.user);
@@ -32,10 +36,7 @@ export default function Profile({ route }) {
   const name = user?.name || "—";
 
   const gradeNumber =
-    user?.selectedGradeNumber ??
-    user?.gradeNumber ??
-    user?.grade ??
-    null;
+    user?.selectedGradeNumber ?? user?.gradeNumber ?? user?.grade ?? null;
 
   const level = user?.selectedLevel || user?.level || null;
   const stream = user?.selectedStream || user?.stream || "";
@@ -74,15 +75,22 @@ export default function Profile({ route }) {
               <View style={styles.twoColRow}>
                 <View style={styles.leftCol}>
                   <Text>
-                    <Text style={styles.label}>Name:</Text>
-                    <Text style={styles.value}> {name}</Text>
+                    {/* ✅ Sinhala font ONLY for label text, not ":" */}
+                    <Text style={[styles.label, isSi ? sinFont("bold") : null]}>
+                      {t("nameLbl")}
+                    </Text>
+                    {" : "}
+                    <Text style={styles.value}>{name}</Text>
                   </Text>
                 </View>
 
                 <View style={styles.rightCol}>
                   <Text>
-                    <Text style={styles.label}>Grade:</Text>
-                    <Text style={styles.value}> {gradeText}</Text>
+                    <Text style={[styles.label, isSi ? sinFont("bold") : null]}>
+                      {t("gradeLbl")}
+                    </Text>
+                    {" : "}
+                    <Text style={styles.value}>{gradeText}</Text>
                   </Text>
                 </View>
               </View>
@@ -91,8 +99,11 @@ export default function Profile({ route }) {
               <View style={[styles.twoColRow, { marginTop: 5 }]}>
                 <View style={styles.leftCol}>
                   <Text>
-                    <Text style={styles.label}>District:</Text>
-                    <Text style={styles.value}> {district || "—"}</Text>
+                    <Text style={[styles.label, isSi ? sinFont("bold") : null]}>
+                      {t("districtLbl")}
+                    </Text>
+                    {" : "}
+                    <Text style={styles.value}>{district || "—"}</Text>
                   </Text>
 
                   {/* keep your second line style same */}
@@ -101,15 +112,21 @@ export default function Profile({ route }) {
 
                 <View style={styles.rightCol}>
                   <Text>
-                    <Text style={styles.label}>Town:</Text>
-                    <Text style={styles.value}> {town || "—"}</Text>
+                    <Text style={[styles.label, isSi ? sinFont("bold") : null]}>
+                      {t("townLbl")}
+                    </Text>
+                    {" : "}
+                    <Text style={styles.value}>{town || "—"}</Text>
                   </Text>
 
                   {/* ✅ A/L Stream (only if exists) */}
                   {showStream && (
                     <Text style={{ marginTop: 6 }}>
-                      <Text style={styles.label}>Stream:</Text>
-                      <Text style={styles.value}> {stream}</Text>
+                      <Text style={[styles.label, isSi ? sinFont("bold") : null]}>
+                        {t("streamLbl")}
+                      </Text>
+                      {" : "}
+                      <Text style={styles.value}>{stream}</Text>
                     </Text>
                   )}
                 </View>

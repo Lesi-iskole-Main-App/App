@@ -5,12 +5,16 @@ import { useNavigation } from "@react-navigation/native";
 
 import useUser from "../app/hooks/useUser";
 import { useGetGradeDetailQuery } from "../app/gradeApi";
+import useT from "../app/i18n/useT";
 
 const norm = (v) => String(v || "").trim().toLowerCase();
 
 export default function DailyQuiz() {
   const navigation = useNavigation();
   const { user } = useUser();
+  const { t, lang, sinFont } = useT();
+  const isSi = lang === "si";
+
   const [selectedSubject, setSelectedSubject] = useState("");
 
   const level = user?.selectedLevel || null;
@@ -37,6 +41,16 @@ export default function DailyQuiz() {
   }, [gradeDoc, isAL, stream]);
 
   const canStart = !!gradeNumber && !!selectedSubject && (!isAL || !!stream);
+
+  // ✅ ONLY these labels translated (NOT backend data)
+  const UI = {
+    title: isSi ? t("dqTitle") : "Daily Quiz",
+    selectSubject: isSi ? t("selectSubject") : "Select Subject",
+    grade: isSi ? t("gradeLbl") : "Grade",
+    stream: isSi ? t("streamLbl") : "Stream",
+    subject: isSi ? t("subjectLbl") : "Subject",
+    continue: isSi ? t("continueLbl") : "Continue",
+  };
 
   const onContinue = () => {
     if (!canStart) return;
@@ -100,20 +114,21 @@ export default function DailyQuiz() {
   return (
     <View style={styles.screen}>
       <View style={styles.card}>
-        <Text style={styles.title}>Daily Quiz</Text>
-        <Text style={styles.subTitle}>Select Subject</Text>
+        <Text style={[styles.title, isSi ? sinFont("bold") : null]}>{UI.title}</Text>
+        <Text style={[styles.subTitle, isSi ? sinFont("regular") : null]}>{UI.selectSubject}</Text>
 
-        <Text style={styles.infoRow}>
-          Grade: <Text style={styles.bold}>{gradeNumber}</Text>
+        <Text style={[styles.infoRow, isSi ? sinFont("regular") : null]}>
+          {UI.grade} <Text style={styles.bold}>{gradeNumber}</Text>
         </Text>
 
         {isAL && (
-          <Text style={styles.infoRow}>
-            Stream: <Text style={styles.bold}>{stream}</Text>
+          <Text style={[styles.infoRow, isSi ? sinFont("regular") : null]}>
+            {UI.stream} <Text style={styles.bold}>{stream}</Text>
           </Text>
         )}
 
-        <Text style={styles.label}>Subject</Text>
+        <Text style={[styles.label, isSi ? sinFont("bold") : null]}>{UI.subject}</Text>
+
         <View style={styles.pickerWrap}>
           <Picker
             selectedValue={selectedSubject}
@@ -122,6 +137,7 @@ export default function DailyQuiz() {
             itemStyle={styles.pickerItem}
             dropdownIconColor="#2563EB"
           >
+            {/* ✅ Not requested to translate placeholder */}
             <Picker.Item label="Select Subject" value="" />
             {subjectsToShow.map((sub) => (
               <Picker.Item key={sub} label={sub} value={sub} />
@@ -138,12 +154,10 @@ export default function DailyQuiz() {
             pressed && canStart && styles.pressed,
           ]}
         >
-          <Text style={styles.startBtnText}>Continue</Text>
+          <Text style={[styles.startBtnText, isSi ? sinFont("bold") : null]}>{UI.continue}</Text>
         </Pressable>
 
-        {!canStart && (
-          <Text style={styles.helperText}>Please select a subject.</Text>
-        )}
+       
       </View>
     </View>
   );

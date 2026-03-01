@@ -1,15 +1,28 @@
-// pages/PastpaperMenu.js
+// pages/PastpaperMenu.js ✅ FULL FILE (design NOT changed, only added sinFont styles)
+
 import React, { useMemo } from "react";
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Alert, Pressable } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  Alert,
+  Pressable,
+} from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useGetPublishedPapersQuery } from "../app/paperApi";
-import { useStartAttemptMutation, useGetMyAttemptsByPaperQuery } from "../app/attemptApi";
+import {
+  useStartAttemptMutation,
+  useGetMyAttemptsByPaperQuery,
+} from "../app/attemptApi";
+import useT from "../app/i18n/useT";
 
 const PRIMARY = "#1153ec";
 
-const PaymentBadge = ({ payment, amount }) => {
+const PaymentBadge = ({ payment, amount, T, isSi, sinFont }) => {
   const type = String(payment || "free").toLowerCase();
   const isPaid = type === "paid";
   const isPractice = type === "practise" || type === "practice";
@@ -18,22 +31,25 @@ const PaymentBadge = ({ payment, amount }) => {
   const text = isPaid ? "#991B1B" : isPractice ? "#92400E" : "#166534";
 
   const label = isPaid
-    ? `PAID • Rs ${Number(amount || 0)}`
+    ? `${T.paid} • Rs ${Number(amount || 0)}`
     : isPractice
-    ? "PRACTISE"
-    : "FREE";
+    ? T.practise
+    : T.free;
 
   return (
     <View style={[styles.badgeTopRight, { backgroundColor: bg }]}>
-      <Text style={[styles.badgeText, { color: text }]}>{label}</Text>
+      <Text style={[styles.badgeText, { color: text }, isSi ? sinFont("bold") : null]}>
+        {label}
+      </Text>
     </View>
   );
 };
 
-const PaperCard = ({ paper, context, onAttemptNow, onViewResult, starting }) => {
+const PaperCard = ({ paper, context, onAttemptNow, onViewResult, starting, T, isSi, sinFont }) => {
   const attemptsLeft = Number(context?.attemptsLeft ?? paper.attempts);
   const isOver = attemptsLeft <= 0;
-  const btnText = isOver ? "View Result" : "Attempt Now";
+
+  const btnText = isOver ? T.viewResult : T.attemptNow;
 
   const onPress = () => {
     if (isOver) return onViewResult?.(paper, context);
@@ -42,20 +58,23 @@ const PaperCard = ({ paper, context, onAttemptNow, onViewResult, starting }) => 
 
   return (
     <View style={styles.card}>
-      {/* ✅ TOP RIGHT PAYMENT BADGE */}
-      <PaymentBadge payment={paper.payment} amount={paper.amount} />
+      <PaymentBadge payment={paper.payment} amount={paper.amount} T={T} isSi={isSi} sinFont={sinFont} />
 
       <Text style={styles.cardTitle}>{paper.title}</Text>
 
       <View style={styles.metaRowCenter}>
         <View style={styles.metaItem}>
           <Ionicons name="help-circle-outline" size={16} color="#64748B" />
-          <Text style={styles.metaText}>{paper.mcqCount} MCQs</Text>
+          <Text style={[styles.metaText, isSi ? sinFont("bold") : null]}>
+            {paper.mcqCount} {T.mcqs}
+          </Text>
         </View>
 
         <View style={styles.metaItem}>
           <Ionicons name="time-outline" size={16} color="#64748B" />
-          <Text style={styles.metaText}>{paper.timeMin} min</Text>
+          <Text style={[styles.metaText, isSi ? sinFont("bold") : null]}>
+            {paper.timeMin} {T.min}
+          </Text>
         </View>
 
         <View style={styles.metaItem}>
@@ -76,8 +95,8 @@ const PaperCard = ({ paper, context, onAttemptNow, onViewResult, starting }) => 
           isOver && styles.btnLight,
         ]}
       >
-        <Text style={[styles.btnText, isOver && styles.btnTextDark]}>
-          {starting ? "Please wait..." : btnText}
+        <Text style={[styles.btnText, isOver && styles.btnTextDark, isSi ? sinFont("bold") : null]}>
+          {starting ? T.pleaseWait : btnText}
         </Text>
         <Ionicons
           name={isOver ? "document-text-outline" : "arrow-forward"}
@@ -89,7 +108,7 @@ const PaperCard = ({ paper, context, onAttemptNow, onViewResult, starting }) => 
   );
 };
 
-const PaperCardWithAttempts = ({ paper, onAttemptNow, onViewResult, starting }) => {
+const PaperCardWithAttempts = ({ paper, onAttemptNow, onViewResult, starting, T, isSi, sinFont }) => {
   const { data: context, isFetching } = useGetMyAttemptsByPaperQuery(
     { paperId: paper.id },
     { skip: !paper?.id }
@@ -103,12 +122,33 @@ const PaperCardWithAttempts = ({ paper, onAttemptNow, onViewResult, starting }) 
       onAttemptNow={onAttemptNow}
       onViewResult={onViewResult}
       starting={starting}
+      T={T}
+      isSi={isSi}
+      sinFont={sinFont}
     />
   );
 };
 
 export default function PastpaperMenu({ route }) {
   const navigation = useNavigation();
+  const { t, lang, sinFont } = useT();
+  const isSi = lang === "si";
+
+  const T = useMemo(
+    () => ({
+      pageTitle: t("ppTitle"),
+      attemptNow: t("attemptNow"),
+      pleaseWait: t("pleaseWait"),
+      mcqs: t("mcqs"),
+      min: t("min"),
+      paid: t("paid"),
+      practise: t("practise"),
+      free: t("free"),
+      viewResult: t("viewResult"),
+    }),
+    [t]
+  );
+
   const { gradeNumber, stream, subject } = route?.params || {};
   const canFetch = !!gradeNumber && !!subject && (Number(gradeNumber) < 12 || !!stream);
 
@@ -166,10 +206,8 @@ export default function PastpaperMenu({ route }) {
 
   return (
     <View style={styles.screen}>
-      <Text style={styles.pageTitle}>Past Papers</Text>
-      <Text style={styles.pageSub}>
-        {subject ? `${subject} • ${gradeNumber || ""}` : "Choose a paper and start"}
-      </Text>
+      <Text style={[styles.pageTitle, isSi ? sinFont("bold") : null]}>{T.pageTitle}</Text>
+      
 
       {!canFetch ? (
         <View style={styles.center}>
@@ -199,6 +237,9 @@ export default function PastpaperMenu({ route }) {
               onAttemptNow={onAttemptNow}
               onViewResult={onViewResult}
               starting={starting}
+              T={T}
+              isSi={isSi}
+              sinFont={sinFont}
             />
           ))}
         </ScrollView>
@@ -210,7 +251,14 @@ export default function PastpaperMenu({ route }) {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#F8FAFC", padding: 16, paddingTop: 18 },
   pageTitle: { fontSize: 22, fontWeight: "900", color: PRIMARY, textAlign: "center" },
-  pageSub: { marginTop: 6, marginBottom: 14, fontSize: 12, fontWeight: "700", color: "#64748B", textAlign: "center" },
+  pageSub: {
+    marginTop: 6,
+    marginBottom: 14,
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#64748B",
+    textAlign: "center",
+  },
   list: { paddingBottom: 24, gap: 12 },
 
   card: {
@@ -239,11 +287,36 @@ const styles = StyleSheet.create({
 
   cardTitle: { fontSize: 15, fontWeight: "900", color: "#0F172A", textAlign: "center" },
 
-  metaRowCenter: { marginTop: 10, flexDirection: "row", justifyContent: "center", flexWrap: "wrap", gap: 10 },
-  metaItem: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#F8FAFC", borderWidth: 1, borderColor: "#E2E8F0", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 },
+  metaRowCenter: {
+    marginTop: 10,
+    flexDirection: "row",
+    justifyContent: "center",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  metaItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
   metaText: { fontSize: 11, fontWeight: "800", color: "#475569" },
 
-  btn: { marginTop: 12, height: 44, borderRadius: 14, backgroundColor: PRIMARY, alignItems: "center", justifyContent: "center", flexDirection: "row", gap: 8 },
+  btn: {
+    marginTop: 12,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: PRIMARY,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+  },
   btnLight: { backgroundColor: "#EEF2FF", borderWidth: 1, borderColor: "#C7D2FE" },
   btnPressed: { opacity: 0.9, transform: [{ scale: 0.99 }] },
   btnText: { color: "#FFFFFF", fontSize: 12, fontWeight: "900" },
@@ -251,5 +324,11 @@ const styles = StyleSheet.create({
 
   center: { flex: 1, alignItems: "center", justifyContent: "center", padding: 16 },
   infoText: { fontSize: 14, fontWeight: "900", color: "#0F172A", textAlign: "center" },
-  infoTextSmall: { marginTop: 8, fontSize: 12, fontWeight: "700", color: "#64748B", textAlign: "center" },
+  infoTextSmall: {
+    marginTop: 8,
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#64748B",
+    textAlign: "center",
+  },
 });

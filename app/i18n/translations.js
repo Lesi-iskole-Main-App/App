@@ -1,6 +1,6 @@
 // app/i18n/translations.js ✅ FULL FILE
 // ✅ Legacy text NOT changed
-// ✅ ONLY ADDED: Result 5 keys + Live 5 keys (as you requested)
+// ✅ ONLY ADDED: subject-select pages labels + FIX completedBadge to real Sinhala
 export const translations = {
   si: {
     // Common / useful legacy keys
@@ -107,6 +107,87 @@ export const translations = {
     liveBadge: "iÔj",
     liveJoin: "iïnkaOfjkak",
 
+    // ✅ Completed Papers page ONLY (labels you gave)
+    completedPapersTitle: "iïmQ¾K l, m%Yak m;%",
+
+    // ✅ FIX: real Sinhala output
+    completedBadge: "සම්පූර්ණයි",
+
+    paperTypeLabel: "m%Yak m;% j¾.h",
+    completedDate: "Èkh",
+    completedTime: "fõ,dj",
+
+    // ✅ Paper type fetched values mapping (ONLY these 4)
+    paperTypeDailyQuiz: "Èkm;d m%Yak m;%h",
+    paperTypeTopicWise: "mdvï wkqj m;%h",
+    paperTypeModelPaper: "wdo¾Y m%Yak m;%h",
+    paperTypePastPaper: "miq.sh  úNd. m%Yak m;%h",
+
+    // ✅ ADDED ONLY for these pages (your requested labels)
+    dqTitle: "Èkm;d m%Yak m;%",
+    twTitle: "mdvï wkqj m%Yak m;%",
+    mpTitle: "wdo¾Y m%Yak m;%",
+    ppTitle: "miq.sh úNd. m%Yak m;%",
+    selectSubject: "úIh f;darkak",
+    streamLbl: "úIh Odrdj",
+    gradeLbl: "fY%a‚h",
+    subjectLbl: "úIh",
+    continueLbl: "bÈßhg",
+    
+      // page titles (already added before, keep same)
+  dqTitle: "Èkm;d m%Yak m;%",
+  twTitle: "mdvï wkqj m%Yak m;%",
+  mpTitle: "wdo¾Y m%Yak m;%",
+  ppTitle: "miq.sh úNd. m%Yak m;%",
+
+  questionLbl: "m%Yakh",
+finishLbl: "wjika lrkak",
+nextQuestionLbl: "B<. m%Yakh",
+previousLbl: "fmr m%Yakh",
+submitLbl: "wjika lrkak",
+  // ✅ new button / labels
+  payNow: "oeka f.jkak",
+  attemptNow: "wdrïN lrkak",
+  pleaseWait: "/§ isákak'''",
+  mcqs: "nyqjrK",
+  min: "ñks;a;=",
+  paid: "f.úh hq;=",
+  practise: "mqyqKq",
+  free: "fkdñf,a",
+  viewResult: "m%;sM, n,kak",
+     correctAnswersLbl: "ksjerÈ ms<s;=re",
+    reviewNotAvailableLbl: "iudf,dapkh ,nd .; fkdyel",
+    examPerformanceLbl: "සමාලෝචනය",
+    homeLbl: "uq,a msgqj",
+    improvementNeedLbl: ";j;a mqyqKqj wjYHhs",
+    allCorrectLbl: "Tfí ms,s;=re ish,a, ksjerÈhs",
+    explainVideoLbl: "meyeÈ,s lsÍfï ùäfhdaj",
+    stillNotAvailableLbl: ";ju;a ,nd.; fkdyel",
+    explainLogicLbl: "ms,s;=r meyeÈ,s lsÍu",
+    explanationLbl: "meyeÈ,s lsÍu",
+    closeLbl: "jikak",
+    hideAnswerLbl: "ms,s;=r i.jkak",
+    showAnswerLbl: "ms,s;=r fmkajkak",
+    yourAnswerLbl: "ඔබේ පිලිතුර",
+    correctAnswerLbl: "නිවැරදි පිලිතුර",
+    questionLbl2: "m%Yakh",
+    correctLbl: "ksjerÈ",
+    wrongLbl: "mqyqKqj wjYHhs",
+    loadingReviewLbl: "o;a; ,nd .ksñka",
+    retryLbl: "kej; W;=;aiy lrkak",
+    startingLbl: "mqrjkak...",
+    retryBtnLbl: "kej; W;=;aiy lrkak",
+    startNextAttemptTitle: "il=Kqj wjika ùu wdrïN lrkak?",
+    startNextAttemptYes: "Tõ, wdrïN lrkak",
+    cancelLbl: "wj,agu",
+    cannotStartTitle: "wdrïN lrkak fkdyel",
+    
+    nameLbl: "ku",
+    gradeLbl: "fY%a‚h",
+    districtLbl: "Èia;%slalh",
+    townLbl: "k.rh",
+    streamLbl: "úIh Odrdj",
+
     districts: {
       Ampara: "wïmdr",
       Anuradhapura: "wkqrdOmqr",
@@ -154,7 +235,11 @@ export const translations = {
     sinhala: "Sinhala",
     english: "English",
     continue: "Continue",
-
+    nameLbl: "Name",
+    gradeLbl: "Grade",
+    districtLbl: "District",
+    townLbl: "Town",
+    streamLbl: "Stream",
     // OTP subtitle (English)
     otpSubtitle_en:
       "Enter the 6 digit code we sent to {masked}.\nCheck your WhatsApp.\nCheck your email.",
@@ -226,19 +311,85 @@ export const translations = {
     back: "Back",
     fpVerifyOtpAgain: "Verify OTP Again",
 
-    // ✅ Result page ONLY (same 5 keys)
+    // ✅ Result page (same 5 keys)
     resultTitle: "Result",
     resultTotal: "Total",
     resultCorrect: "Correct",
     resultPercentage: "Percentage",
     resultBest: "Best Completed Result",
 
-    // ✅ Live page ONLY (same 5 keys)
+    // ✅ Live page (same 5 keys)
     liveTitle: "Live Classes",
     liveDate: "Date",
     liveTime: "Time",
     liveBadge: "LIVE",
     liveJoin: "Join Class",
+
+    // ✅ Completed Papers page (same keys)
+    completedPapersTitle: "Completed Papers",
+    completedBadge: "Completed",
+    paperTypeLabel: "Paper Type",
+    completedDate: "Date",
+    completedTime: "Time",
+
+    questionLbl: "Question",
+finishLbl: "FINISH",
+nextQuestionLbl: "Next Question",
+previousLbl: "Previous",
+submitLbl: "Submit",
+
+   correctAnswersLbl: "Correct Answers",
+    reviewNotAvailableLbl: "Review not available",
+    examPerformanceLbl: "EXAM PERFORMANCE",
+    homeLbl: "Home",
+    improvementNeedLbl: "improvement need",
+    allCorrectLbl: "Your All answers correct",
+    explainVideoLbl: "Explain Video",
+    stillNotAvailableLbl: "Still not available",
+    explainLogicLbl: "Explain Logic",
+    explanationLbl: "Explanation",
+    closeLbl: "Close",
+    hideAnswerLbl: "Hide Answer",
+    showAnswerLbl: "Show Answer",
+    yourAnswerLbl: "Your Answer",
+    correctAnswerLbl: "Correct Answer",
+    questionLbl2: "Question",
+    correctLbl: "Correct",
+    wrongLbl: "improvement need",
+    loadingReviewLbl: "Loading review...",
+    retryLbl: "Retry",
+    startingLbl: "Starting...",
+    retryBtnLbl: "Retry",
+    startNextAttemptTitle: "Start next attempt?",
+    startNextAttemptYes: "Yes, Start",
+    cancelLbl: "Cancel",
+    cannotStartTitle: "Cannot start",
+    // ✅ Paper type values (English)
+    paperTypeDailyQuiz: "Daily Quiz",
+    paperTypeTopicWise: "Topic wise paper",
+    paperTypeModelPaper: "Model paper",
+    paperTypePastPaper: "Past paper",
+
+    // ✅ Added only for these pages
+    dqTitle: "Daily Quiz",
+    twTitle: "Topic Wise Papers",
+    mpTitle: "Model Papers",
+    ppTitle: "Past Papers",
+    selectSubject: "Select Subject",
+    streamLbl: "Stream",
+    gradeLbl: "Grade",
+    subjectLbl: "Subject",
+    continueLbl: "Continue",
+
+  payNow: "PAY NOW",
+  attemptNow: "Attempt Now",
+  pleaseWait: "Please wait...",
+  mcqs: "MCQs",
+  min: "min",
+  paid: "PAID",
+  practise: "PRACTISE",
+  free: "FREE",
+  viewResult: "View Result",
 
     districts: {
       Ampara: "Ampara",
