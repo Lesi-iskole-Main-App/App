@@ -7,7 +7,7 @@
  *  - https://api.charithgimhan.com
  *  - https://www.charithgimhan.com   (ONLY if backend is actually serving /api routes)
  */
-export const BASE_URL = "https://www.charithgimhan.com"; // <-- change to your backend
+export const BASE_URL = "https://lesiiskole.netlify.app"; // <-- change to your backend
 
 // Optional helper to safely build URLs
 export const apiUrl = (path = "") => {
