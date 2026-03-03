@@ -29,7 +29,11 @@ export default function BottomNavigationBar() {
     useSelector((s) => s?.user?.user) || useSelector((s) => s?.auth?.user);
 
   const level = user?.selectedLevel || user?.level || null;
-  const showLMS = level !== "al";
+
+  // ✅ rules
+  const isAL = String(level || "").toLowerCase() === "al";
+  const showLMS = !isAL;      // hide LMS on AL
+  const showLive = !isAL;     // ✅ hide Live on AL
 
   // ✅ hide after hooks
   if (HIDE_BOTTOM_BAR_ON.has(currentRouteName)) return null;
@@ -45,13 +49,17 @@ export default function BottomNavigationBar() {
             onPress={() => navigation.navigate("Home")}
           />
 
-          <NavItem
-            icon="radio"
-            label={t("navLive")}
-            labelStyle={navFont("bold")}
-            onPress={() => navigation.navigate("Live")}
-          />
+          {/* ✅ Live hidden for AL */}
+          {showLive && (
+            <NavItem
+              icon="radio"
+              label={t("navLive")}
+              labelStyle={navFont("bold")}
+              onPress={() => navigation.navigate("Live")}
+            />
+          )}
 
+          {/* ✅ keep center gap only when LMS button is shown */}
           {showLMS && <View style={styles.slotCenter} />}
 
           <NavItem
@@ -71,6 +79,7 @@ export default function BottomNavigationBar() {
         </View>
       </View>
 
+      {/* ✅ LMS button hidden for AL */}
       {showLMS && (
         <Pressable
           onPress={() => navigation.navigate("LMS")}

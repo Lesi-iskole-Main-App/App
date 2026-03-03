@@ -79,6 +79,23 @@ const formatBirthday = (date) => {
   return `${y}-${m}-${d}`;
 };
 
+const makeSafeDate = (y, m, d) => {
+  const yy = Number(y);
+  const mm = Number(m);
+  const dd = Number(d);
+  if (!yy || !mm || !dd) return null;
+  const dt = new Date(yy, mm - 1, dd);
+  if (Number.isNaN(dt.getTime())) return null;
+  // validate exact match (avoid overflow like Feb 31 -> Mar 2)
+  if (
+    dt.getFullYear() !== yy ||
+    dt.getMonth() !== mm - 1 ||
+    dt.getDate() !== dd
+  )
+    return null;
+  return dt;
+};
+
 export default function Sign({ navigation, route }) {
   const dispatch = useDispatch();
   const { t, sinFont } = useT();
@@ -110,7 +127,17 @@ export default function Sign({ navigation, route }) {
   const [passwordIn, setPasswordIn] = useState("");
 
   const [districtModal, setDistrictModal] = useState(false);
+
+  // ✅ mobile picker visible (ios/android)
   const [birthdayPickerVisible, setBirthdayPickerVisible] = useState(false);
+
+  // ✅ web modal picker visible
+  const [birthdayWebModal, setBirthdayWebModal] = useState(false);
+
+  // ✅ web temp values
+  const [webY, setWebY] = useState("");
+  const [webM, setWebM] = useState("");
+  const [webD, setWebD] = useState("");
 
   const toggleBtnStyle = useMemo(
     () => (active) => [
@@ -259,10 +286,103 @@ export default function Sign({ navigation, route }) {
     if (Platform.OS === "android") {
       setBirthdayPickerVisible(false);
     }
+    if (selectedDate) setBirthday(selectedDate);
+  };
 
-    if (selectedDate) {
-      setBirthday(selectedDate);
+  const openBirthdayPicker = () => {
+    // ✅ web uses modal picker
+    if (Platform.OS === "web") {
+      const now = birthday || new Date(2005, 0, 1);
+      setWebY(String(now.getFullYear()));
+      setWebM(String(now.getMonth() + 1));
+      setWebD(String(now.getDate()));
+      setBirthdayWebModal(true);
+      return;
     }
+
+    // ✅ ios/android keep your existing picker
+    setBirthdayPickerVisible(true);
+  };
+
+  const BirthdayWebPicker = () => {
+    if (Platform.OS !== "web") return null;
+
+    const currentYear = new Date().getFullYear();
+    const years = [];
+    for (let y = currentYear; y >= 1950; y--) years.push(String(y));
+
+    const months = Array.from({ length: 12 }, (_, i) => String(i + 1));
+    const days = Array.from({ length: 31 }, (_, i) => String(i + 1));
+
+    const Item = ({ value, setValue, list }) => (
+      <View style={styles.webPickerCol}>
+        <ScrollView style={{ maxHeight: 220 }} showsVerticalScrollIndicator={false}>
+          {list.map((v) => {
+            const active = String(value) === String(v);
+            return (
+              <Pressable
+                key={v}
+                style={[styles.webPickItem, active && styles.webPickItemActive]}
+                onPress={() => setValue(v)}
+              >
+                <Text style={[styles.webPickText, sinFont("bold")]}>
+                  {v}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      </View>
+    );
+
+    return (
+      <Modal visible={birthdayWebModal} transparent animationType="fade">
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setBirthdayWebModal(false)}
+        >
+          <Pressable style={styles.modalCard} onPress={() => {}}>
+            <Text style={[styles.modalTitle, sinFont("bold")]}>
+              {t("birthday")}
+            </Text>
+
+            <View style={styles.webPickerRow}>
+              <Item value={webY} setValue={setWebY} list={years} />
+              <Item value={webM} setValue={setWebM} list={months} />
+              <Item value={webD} setValue={setWebD} list={days} />
+            </View>
+
+            <View style={styles.webPickerActions}>
+              <Pressable
+                style={[styles.webBtn, styles.webBtnGhost]}
+                onPress={() => setBirthdayWebModal(false)}
+              >
+                <Text style={[styles.webBtnTextGhost, sinFont("bold")]}>
+                  {t("close") || "Close"}
+                </Text>
+              </Pressable>
+
+              <Pressable
+                style={[styles.webBtn, styles.webBtnPrimary]}
+                onPress={() => {
+                  const dt = makeSafeDate(webY, webM, webD);
+                  if (!dt) {
+                    Alert.alert("Invalid date", "Please select a valid birthday.");
+                    return;
+                  }
+                  setBirthday(dt);
+                  setBirthdayWebModal(false);
+                }}
+              >
+                <Text style={[styles.webBtnText, sinFont("bold")]}>
+                  OK
+                </Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+    );
   };
 
   const DistrictPicker = () => (
@@ -276,10 +396,7 @@ export default function Sign({ navigation, route }) {
             {t("selectDistrict")}
           </Text>
 
-          <ScrollView
-            style={{ maxHeight: 420 }}
-            showsVerticalScrollIndicator={false}
-          >
+          <ScrollView style={{ maxHeight: 420 }} showsVerticalScrollIndicator={false}>
             {SRI_LANKA_DISTRICTS.map((d) => (
               <Pressable
                 key={d}
@@ -362,14 +479,7 @@ export default function Sign({ navigation, route }) {
 
             <Pressable onPress={onContinue} style={styles.gradientBtnOuter}>
               <LinearGradient
-                colors={[
-                  "#086DFF",
-                  "#5E9FFD",
-                  "#7DB1FC",
-                  "#62C4F6",
-                  "#48D7F0",
-                  "#C7F4F8",
-                ]}
+                colors={["#086DFF", "#5E9FFD", "#7DB1FC", "#62C4F6", "#48D7F0", "#C7F4F8"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.gradientBtn}
@@ -395,6 +505,7 @@ export default function Sign({ navigation, route }) {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <DistrictPicker />
+      <BirthdayWebPicker />
 
       <ScrollView
         contentContainerStyle={styles.container}
@@ -442,10 +553,7 @@ export default function Sign({ navigation, route }) {
           >
             <Text
               style={[
-                {
-                  color: district ? "#0F172A" : PLACEHOLDER,
-                  fontWeight: "700",
-                },
+                { color: district ? "#0F172A" : PLACEHOLDER, fontWeight: "700" },
                 sinFont("bold"),
               ]}
             >
@@ -469,8 +577,9 @@ export default function Sign({ navigation, route }) {
             style={{ minHeight: 90, textAlignVertical: "top", paddingTop: 12 }}
           />
 
+          {/* ✅ works on iOS/Android (DateTimePicker) + Web (modal picker) */}
           <Pressable
-            onPress={() => setBirthdayPickerVisible(true)}
+            onPress={openBirthdayPicker}
             style={[styles.input, { justifyContent: "center" }]}
           >
             <Text
@@ -486,7 +595,8 @@ export default function Sign({ navigation, route }) {
             </Text>
           </Pressable>
 
-          {birthdayPickerVisible && (
+          {/* ✅ iOS/Android only */}
+          {birthdayPickerVisible && Platform.OS !== "web" && (
             <DateTimePicker
               value={birthday || new Date(2005, 0, 1)}
               mode="date"
@@ -506,14 +616,7 @@ export default function Sign({ navigation, route }) {
 
           <Pressable onPress={onContinue} style={styles.gradientBtnOuter}>
             <LinearGradient
-              colors={[
-                "#086DFF",
-                "#5E9FFD",
-                "#7DB1FC",
-                "#62C4F6",
-                "#48D7F0",
-                "#C7F4F8",
-              ]}
+              colors={["#086DFF", "#5E9FFD", "#7DB1FC", "#62C4F6", "#48D7F0", "#C7F4F8"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.gradientBtn}
@@ -723,5 +826,63 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
     color: "#214294",
+  },
+
+  // ✅ WEB birthday picker styles
+  webPickerRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  webPickerCol: {
+    flex: 1,
+    borderRadius: 14,
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    padding: 8,
+  },
+  webPickItem: {
+    paddingVertical: 10,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  webPickItemActive: {
+    backgroundColor: "#E6F0FF",
+  },
+  webPickText: {
+    fontSize: 14,
+    color: "#0F172A",
+    fontWeight: "700",
+  },
+  webPickerActions: {
+    marginTop: 12,
+    flexDirection: "row",
+    gap: 10,
+    justifyContent: "flex-end",
+  },
+  webBtn: {
+    height: 42,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  webBtnGhost: {
+    backgroundColor: "#F1F5F9",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  webBtnPrimary: {
+    backgroundColor: PRIMARY,
+  },
+  webBtnText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "900",
+  },
+  webBtnTextGhost: {
+    color: PRIMARY,
+    fontSize: 14,
+    fontWeight: "900",
   },
 });
