@@ -13,7 +13,6 @@ import { useFonts } from "expo-font";
 import { useSelector } from "react-redux";
 
 import profile from "../assets/profile.png";
-import ReviewComponent from "../components/ReviewComponent";
 import useT from "../app/i18n/useT";
 
 // ✅ match your BottomNavigation height
@@ -122,7 +121,9 @@ export default function Profile({ route }) {
                   {/* ✅ A/L Stream (only if exists) */}
                   {showStream && (
                     <Text style={{ marginTop: 6 }}>
-                      <Text style={[styles.label, isSi ? sinFont("bold") : null]}>
+                      <Text
+                        style={[styles.label, isSi ? sinFont("bold") : null]}
+                      >
                         {t("streamLbl")}
                       </Text>
                       {" : "}
@@ -133,12 +134,8 @@ export default function Profile({ route }) {
               </View>
             </View>
 
-            <Text style={styles.sinhalaText}>
-              {"f,ais biafld,af,a cx.u fhojqu ms<sno woyia"}
-            </Text>
 
-            {/* ✅ ReviewComponent */}
-            <ReviewComponent route={route} />
+            {/* ✅ ReviewComponent removed */}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
