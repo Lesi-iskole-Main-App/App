@@ -1,6 +1,6 @@
-// pages/DailyQuizMenu.js ✅ FULL FILE (design NOT changed, only added sinFont styles)
+// pages/DailyQuizMenu.js ✅ FULL FILE (design NOT changed)
 
-import React, { useMemo } from "react";
+import React, { useMemo, useCallback, useState } from "react";
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useGetPublishedPapersQuery } from "../app/paperApi";
@@ -32,7 +32,6 @@ const PaymentBadge = ({ payment, amount, T, isSi, sinFont }) => {
   const bg = isPaid ? "#FEE2E2" : isPractice ? "#FEF3C7" : "#DCFCE7";
   const text = isPaid ? "#991B1B" : isPractice ? "#92400E" : "#166534";
 
-  // ✅ translate label words ONLY. Keep amount number NOT translated.
   const label = isPaid
     ? `${T.paid} • Rs ${Number(amount || 0)}`
     : isPractice
@@ -76,7 +75,6 @@ const PaperCard = ({
 
   const showPayNow = isPaidPaper && !unlocked;
 
-  // ✅ translate button labels ONLY
   const btnText = showPayNow ? T.payNow : isOver ? T.viewResult : T.attemptNow;
 
   const onPress = () => {
@@ -95,7 +93,6 @@ const PaperCard = ({
         sinFont={sinFont}
       />
 
-      {/* ❌ paper.title is backend data => DO NOT translate */}
       <Text style={styles.cardTitle}>{paper.title}</Text>
 
       <View style={styles.metaRowCenter}>
@@ -115,7 +112,6 @@ const PaperCard = ({
 
         <View style={styles.metaItem}>
           <Ionicons name="repeat-outline" size={16} color="#64748B" />
-          {/* "left" not requested earlier; kept English intentionally */}
           <Text style={styles.metaText}>
             {Math.max(attemptsLeft, 0)}/{paper.attempts} left
           </Text>
@@ -168,18 +164,41 @@ const PaperCardWithContext = ({
   T,
   isSi,
   sinFont,
+  refreshKey, // ✅ used to force hooks to refetch
 }) => {
-  const { data: attemptsContext, isFetching: attemptsFetching } =
-    useGetMyAttemptsByPaperQuery({ paperId: paper.id }, { skip: !paper?.id });
+  const { data: attemptsContext, isFetching: attemptsFetching, refetch: refetchAttempts } =
+    useGetMyAttemptsByPaperQuery(
+      { paperId: paper.id },
+      {
+        skip: !paper?.id,
+        refetchOnMountOrArgChange: true,
+        refetchOnFocus: true,
+      }
+    );
 
   const payType = String(paper.payment || "free").toLowerCase();
   const needsPayCheck = payType === "paid";
 
-  const { data: paymentContext, isFetching: payFetching } =
+  const { data: paymentContext, isFetching: payFetching, refetch: refetchPay } =
     useGetMyPaymentStatusQuery(
       { paperId: paper.id },
-      { skip: !paper?.id || !needsPayCheck }
+      {
+        skip: !paper?.id || !needsPayCheck,
+        refetchOnMountOrArgChange: true,
+        refetchOnFocus: true,
+        refetchOnReconnect: true,
+      }
     );
+
+  // ✅ when DailyQuizMenu gets focus (after payment), force refetch
+  useFocusEffect(
+    useCallback(() => {
+      if (paper?.id) {
+        refetchAttempts?.();
+        if (needsPayCheck) refetchPay?.();
+      }
+    }, [paper?.id, needsPayCheck, refetchAttempts, refetchPay, refreshKey])
+  );
 
   const safeAttempts = attemptsFetching ? null : attemptsContext;
   const safePay = payFetching ? null : paymentContext;
@@ -207,7 +226,15 @@ export default function DailyQuizMenu({ route }) {
   const { t, lang, sinFont } = useT();
   const isSi = lang === "si";
 
-  // ✅ Only labels for this page
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // ✅ when this screen comes back (after PaymentCheckout), trigger refreshKey
+  useFocusEffect(
+    useCallback(() => {
+      setRefreshKey((x) => x + 1);
+    }, [])
+  );
+
   const T = useMemo(
     () => ({
       pageTitle: t("dqTitle"),
@@ -243,7 +270,7 @@ export default function DailyQuizMenu({ route }) {
   const PAPERS = useMemo(() => {
     return (Array.isArray(papersRaw) ? papersRaw : []).map((p) => ({
       id: String(p?._id || ""),
-      title: String(p?.paperTitle || "Daily Quiz"), // backend title (don’t translate)
+      title: String(p?.paperTitle || "Daily Quiz"),
       mcqCount: Number(p?.questionCount || 0),
       timeMin: Number(p?.timeMinutes || 0),
       attempts: Number(p?.attempts || 1),
@@ -305,7 +332,9 @@ export default function DailyQuizMenu({ route }) {
 
       {!canFetch ? (
         <View style={styles.center}>
-          <Text style={styles.infoText}>Grade / Stream / Subject not selected</Text>
+          <Text style={styles.infoText}>
+            Grade / Stream / Subject not selected
+          </Text>
         </View>
       ) : isLoading || isFetching ? (
         <View style={styles.center}>
@@ -340,6 +369,7 @@ export default function DailyQuizMenu({ route }) {
               T={T}
               isSi={isSi}
               sinFont={sinFont}
+              refreshKey={refreshKey}
             />
           ))}
         </ScrollView>
@@ -430,13 +460,27 @@ const styles = StyleSheet.create({
     gap: 8,
   },
 
-  btnLight: { backgroundColor: "#EEF2FF", borderWidth: 1, borderColor: "#C7D2FE" },
+  btnLight: {
+    backgroundColor: "#EEF2FF",
+    borderWidth: 1,
+    borderColor: "#C7D2FE",
+  },
   btnPressed: { opacity: 0.9, transform: [{ scale: 0.99 }] },
   btnText: { color: "#FFFFFF", fontSize: 12, fontWeight: "900" },
   btnTextDark: { color: "#0F172A" },
 
-  center: { flex: 1, alignItems: "center", justifyContent: "center", padding: 16 },
-  infoText: { fontSize: 14, fontWeight: "900", color: "#0F172A", textAlign: "center" },
+  center: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 16,
+  },
+  infoText: {
+    fontSize: 14,
+    fontWeight: "900",
+    color: "#0F172A",
+    textAlign: "center",
+  },
   infoTextSmall: {
     marginTop: 8,
     fontSize: 12,

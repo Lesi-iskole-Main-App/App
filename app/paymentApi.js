@@ -16,7 +16,6 @@ export const paymentApi = createApi({
   }),
   tagTypes: ["PaymentStatus"],
   endpoints: (builder) => ({
-    // ✅ create checkout for PayHere (returns gatewayUrl + fields)
     createCheckout: builder.mutation({
       query: ({ paperId }) => ({
         url: "/checkout",
@@ -28,7 +27,6 @@ export const paymentApi = createApi({
       ],
     }),
 
-    // ✅ get unlock state
     getMyPaymentStatus: builder.query({
       query: ({ paperId }) => ({
         url: `/my/${paperId}`,

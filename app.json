@@ -23,13 +23,10 @@
       "edgeToEdgeEnabled": true
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
     },
     "assetBundlePatterns": ["**/*"],
-    "plugins": [
-      "expo-font",
-      "expo-asset",
-      "expo-speech-recognition"
-    ]
+    "plugins": ["expo-font", "expo-asset", "expo-speech-recognition"]
   }
 }

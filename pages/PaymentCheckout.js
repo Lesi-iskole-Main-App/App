@@ -1,5 +1,6 @@
-// src/pages/PaymentCheckout.js
-import React, { useEffect, useMemo, useState } from "react";
+// src/pages/PaymentCheckout.js ✅ FULL FILE
+
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import {
   View,
   Text,
@@ -31,7 +32,10 @@ function buildAutoPostHtml(gatewayUrl, fields) {
       .replace(/'/g, "&#039;");
 
   const inputs = Object.entries(fields || {})
-    .map(([k, v]) => `<input type="hidden" name="${esc(k)}" value="${esc(v)}" />`)
+    .map(
+      ([k, v]) =>
+        `<input type="hidden" name="${esc(k)}" value="${esc(v)}" />`
+    )
     .join("\n");
 
   return `<!doctype html>
@@ -57,14 +61,19 @@ function buildAutoPostHtml(gatewayUrl, fields) {
 
 export default function PaymentCheckout({ route }) {
   const navigation = useNavigation();
-  const { paperId, title, amount } = route?.params || {};
 
+  const { paperId, title, amount } = route?.params || {};
   const [createCheckout, { isLoading }] = useCreateCheckoutMutation();
+
   const [html, setHtml] = useState("");
+  const didStartRef = useRef(false);
 
   const safeTitle = useMemo(() => String(title || "Payment"), [title]);
 
   useEffect(() => {
+    if (didStartRef.current) return;
+    didStartRef.current = true;
+
     (async () => {
       try {
         if (!paperId) {
@@ -79,11 +88,13 @@ export default function PaymentCheckout({ route }) {
         const fields = res?.fields || {};
 
         if (!gatewayUrl) throw new Error("gatewayUrl not returned");
+
+        // ✅ PayHere mandatory fields check (you already validate hash)
         if (!fields?.merchant_id || !fields?.order_id || !fields?.hash) {
           throw new Error("PayHere fields missing (merchant_id/order_id/hash)");
         }
 
-        // ✅ WEB: real POST form submit
+        // ✅ WEB: real POST form submit (PayHere needs POST, not GET)
         if (Platform.OS === "web") {
           const form = document.createElement("form");
           form.method = "POST";
@@ -112,7 +123,7 @@ export default function PaymentCheckout({ route }) {
         navigation.goBack();
       }
     })();
-  }, [paperId]);
+  }, [paperId, createCheckout, navigation]);
 
   return (
     <View style={styles.screen}>
@@ -124,11 +135,14 @@ export default function PaymentCheckout({ route }) {
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>{safeTitle}</Text>
           <Text style={styles.subTitle}>
-            {Number(amount || 0) ? `Amount: Rs ${Number(amount || 0)}` : "Secure checkout"}
+            {Number(amount || 0)
+              ? `Amount: Rs ${Number(amount || 0)}`
+              : "Secure checkout"}
           </Text>
         </View>
       </View>
 
+      {/* ✅ Loading */}
       {isLoading && !html ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={PRIMARY} />
@@ -140,6 +154,8 @@ export default function PaymentCheckout({ route }) {
             originWhitelist={["*"]}
             source={{ html }}
             startInLoadingState
+            javaScriptEnabled
+            domStorageEnabled
             renderLoading={() => (
               <View style={styles.center}>
                 <ActivityIndicator size="large" color={PRIMARY} />
@@ -150,18 +166,29 @@ export default function PaymentCheckout({ route }) {
               const url = String(navState?.url || "");
 
               // ✅ When PayHere hits your backend return/cancel pages
+              // (these URLs must match what backend sends to PayHere)
               if (url.includes("/api/payment/return")) {
-                Alert.alert("Payment", "Payment completed. Please reopen the paper.");
+                Alert.alert(
+                  "Payment",
+                  "Payment completed. Go back and the paper will unlock."
+                );
                 navigation.goBack();
               }
+
               if (url.includes("/api/payment/cancel")) {
                 Alert.alert("Payment", "Payment cancelled.");
                 navigation.goBack();
               }
             }}
+            onError={(e) => {
+              console.log("WebView error:", e?.nativeEvent);
+              Alert.alert("Payment Error", "WebView failed to load PayHere.");
+              navigation.goBack();
+            }}
           />
         </View>
       ) : (
+        // ✅ WEB fallback text (because redirect happens in browser)
         <View style={styles.center}>
           <Text style={styles.info}>PayHere checkout opened in browser.</Text>
           <Pressable onPress={() => navigation.goBack()} style={styles.doneBtn}>
@@ -201,8 +228,15 @@ const styles = StyleSheet.create({
   subTitle: { marginTop: 2, fontSize: 12, fontWeight: "700", color: "#64748B" },
 
   webWrap: { flex: 1, overflow: "hidden" },
+
   center: { flex: 1, alignItems: "center", justifyContent: "center", padding: 16 },
-  info: { marginTop: 10, fontSize: 12, fontWeight: "800", color: "#64748B", textAlign: "center" },
+  info: {
+    marginTop: 10,
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#64748B",
+    textAlign: "center",
+  },
 
   doneBtn: {
     marginTop: 12,

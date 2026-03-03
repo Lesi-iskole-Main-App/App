@@ -2,11 +2,16 @@
   "name": "frontend",
   "version": "1.0.0",
   "main": "index.js",
+  "private": true,
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+
+    "build": "expo export --platform web",
+    "serve": "npx serve dist",
+    "clean": "rimraf dist .expo"
   },
   "dependencies": {
     "@expo-google-fonts/abhaya-libre": "^0.4.1",
@@ -68,8 +73,8 @@
     "tesseract.js": "^6.0.1",
     "three": "^0.166.1"
   },
-  "private": true,
   "devDependencies": {
-    "baseline-browser-mapping": "^2.9.13"
+    "baseline-browser-mapping": "^2.9.13",
+    "rimraf": "^6.0.1"
   }
 }
