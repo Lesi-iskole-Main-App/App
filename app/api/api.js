@@ -1,6 +1,6 @@
 // app/api/baseUrl.js
 
-export const BASE_URL = "https://backend-1-k3q2.onrender.com";
+export const BASE_URL = "https://lesiiskoleserver.com";
 
 // Optional helper to safely build URLs
 export const apiUrl = (path = "") => {
