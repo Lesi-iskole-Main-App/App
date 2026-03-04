@@ -8,6 +8,7 @@ import { useGetGradeDetailQuery } from "../app/gradeApi";
 import useT from "../app/i18n/useT";
 
 const norm = (v) => String(v || "").trim().toLowerCase();
+const TAB_BAR_SPACE = 110;
 
 export default function PastPapers() {
   const navigation = useNavigation();
@@ -161,16 +162,34 @@ export default function PastPapers() {
         >
           <Text style={[styles.startBtnText, isSi ? sinFont("bold") : null]}>{UI.continue}</Text>
         </Pressable>
-
-       
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#F8FAFC", alignItems: "center", justifyContent: "center", padding: 16 },
-  card: { width: "100%", maxWidth: 420, backgroundColor: "#FFFFFF", borderRadius: 18, padding: 16, borderWidth: 1, borderColor: "#E2E8F0", shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 3 },
+  screen: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 16,
+    paddingBottom: TAB_BAR_SPACE,
+  },
+  card: {
+    width: "100%",
+    maxWidth: 420,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
+  },
   title: { fontSize: 20, fontWeight: "900", color: "#0F172A", textAlign: "center" },
   subTitle: { fontSize: 13, color: "#334155", textAlign: "center", marginTop: 6, marginBottom: 14 },
   infoRow: { fontSize: 12, fontWeight: "700", color: "#334155", textAlign: "center", marginTop: 4 },
@@ -183,7 +202,14 @@ const styles = StyleSheet.create({
   startBtnText: { color: "#FFFFFF", fontSize: 15, fontWeight: "900" },
   pressed: { transform: [{ scale: 0.99 }], opacity: 0.92 },
   helperText: { marginTop: 10, textAlign: "center", color: "#64748B", fontSize: 12, fontWeight: "600" },
-  center: { flex: 1, backgroundColor: "#F8FAFC", alignItems: "center", justifyContent: "center", padding: 16 },
+  center: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 16,
+    paddingBottom: TAB_BAR_SPACE,
+  },
   primaryBtn: { marginTop: 14, backgroundColor: "#2563EB", paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12 },
   primaryBtnText: { color: "#FFFFFF", fontWeight: "900", fontSize: 12 },
 });

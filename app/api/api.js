@@ -1,11 +1,12 @@
-// app/api/baseUrl.js
+// app/api/api.js
 
-export const BASE_URL = "https://lesiiskoleserver.com";
+const ENV_URL = process.env.EXPO_PUBLIC_API_URL;
 
-// Optional helper to safely build URLs
-export const apiUrl = (path = "") => {
-  const base = String(BASE_URL).replace(/\/+$/, "");
-  const p = String(path).trim();
-  if (!p) return base;
-  return p.startsWith("/") ? `${base}${p}` : `${base}/${p}`;
-};
+if (!ENV_URL) {
+  throw new Error(
+    "❌ EXPO_PUBLIC_API_URL is not defined in .env file"
+  );
+}
+
+// remove trailing slash
+export const BASE_URL = ENV_URL.replace(/\/+$/, "");

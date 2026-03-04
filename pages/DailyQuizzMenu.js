@@ -1,4 +1,5 @@
-// pages/DailyQuizMenu.js ✅ FULL FILE (design NOT changed)
+// pages/DailyQuizMenu.js ✅ FULL FILE
+// logic aligned with other menu pages + keeps paid paper support + bottom spacing fixed
 
 import React, { useMemo, useCallback, useState } from "react";
 import {
@@ -23,6 +24,7 @@ import useT from "../app/i18n/useT";
 
 const PRIMARY = "#1153ec";
 const RED_BTN = "#DC2626";
+const TAB_BAR_SPACE = 110;
 
 const PaymentBadge = ({ payment, amount, T, isSi, sinFont }) => {
   const type = String(payment || "free").toLowerCase();
@@ -69,7 +71,6 @@ const PaperCard = ({
   const isPaidPaper = payType === "paid";
 
   const unlocked = isPaidPaper ? !!paymentContext?.unlocked : true;
-
   const attemptsLeft = Number(attemptsContext?.attemptsLeft ?? paper.attempts);
   const isOver = attemptsLeft <= 0;
 
@@ -155,7 +156,7 @@ const PaperCard = ({
   );
 };
 
-const PaperCardWithContext = ({
+const PaperCardWithStatus = ({
   paper,
   onAttemptNow,
   onViewResult,
@@ -164,33 +165,38 @@ const PaperCardWithContext = ({
   T,
   isSi,
   sinFont,
-  refreshKey, // ✅ used to force hooks to refetch
+  refreshKey,
 }) => {
-  const { data: attemptsContext, isFetching: attemptsFetching, refetch: refetchAttempts } =
-    useGetMyAttemptsByPaperQuery(
-      { paperId: paper.id },
-      {
-        skip: !paper?.id,
-        refetchOnMountOrArgChange: true,
-        refetchOnFocus: true,
-      }
-    );
+  const {
+    data: attemptsContext,
+    isFetching: attemptsFetching,
+    refetch: refetchAttempts,
+  } = useGetMyAttemptsByPaperQuery(
+    { paperId: paper.id },
+    {
+      skip: !paper?.id,
+      refetchOnMountOrArgChange: true,
+      refetchOnFocus: true,
+    }
+  );
 
   const payType = String(paper.payment || "free").toLowerCase();
   const needsPayCheck = payType === "paid";
 
-  const { data: paymentContext, isFetching: payFetching, refetch: refetchPay } =
-    useGetMyPaymentStatusQuery(
-      { paperId: paper.id },
-      {
-        skip: !paper?.id || !needsPayCheck,
-        refetchOnMountOrArgChange: true,
-        refetchOnFocus: true,
-        refetchOnReconnect: true,
-      }
-    );
+  const {
+    data: paymentContext,
+    isFetching: payFetching,
+    refetch: refetchPay,
+  } = useGetMyPaymentStatusQuery(
+    { paperId: paper.id },
+    {
+      skip: !paper?.id || !needsPayCheck,
+      refetchOnMountOrArgChange: true,
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
+    }
+  );
 
-  // ✅ when DailyQuizMenu gets focus (after payment), force refetch
   useFocusEffect(
     useCallback(() => {
       if (paper?.id) {
@@ -228,7 +234,6 @@ export default function DailyQuizMenu({ route }) {
 
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // ✅ when this screen comes back (after PaymentCheckout), trigger refreshKey
   useFocusEffect(
     useCallback(() => {
       setRefreshKey((x) => x + 1);
@@ -359,7 +364,7 @@ export default function DailyQuizMenu({ route }) {
           showsVerticalScrollIndicator={false}
         >
           {PAPERS.map((p) => (
-            <PaperCardWithContext
+            <PaperCardWithStatus
               key={p.id}
               paper={p}
               onAttemptNow={onAttemptNow}
@@ -379,7 +384,13 @@ export default function DailyQuizMenu({ route }) {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#F8FAFC", padding: 16, paddingTop: 18 },
+  screen: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+    padding: 16,
+    paddingTop: 18,
+    paddingBottom: 0,
+  },
 
   pageTitle: {
     fontSize: 22,
@@ -389,7 +400,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
 
-  list: { paddingBottom: 24, gap: 12 },
+  list: { paddingBottom: TAB_BAR_SPACE, gap: 12 },
 
   card: {
     position: "relative",
@@ -474,6 +485,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: 16,
+    paddingBottom: TAB_BAR_SPACE,
   },
   infoText: {
     fontSize: 14,

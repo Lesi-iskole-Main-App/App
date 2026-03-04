@@ -8,6 +8,7 @@ import { useGetGradeDetailQuery } from "../app/gradeApi";
 import useT from "../app/i18n/useT";
 
 const norm = (v) => String(v || "").trim().toLowerCase();
+const TAB_BAR_SPACE = 110;
 
 export default function DailyQuiz() {
   const navigation = useNavigation();
@@ -42,7 +43,6 @@ export default function DailyQuiz() {
 
   const canStart = !!gradeNumber && !!selectedSubject && (!isAL || !!stream);
 
-  // ✅ ONLY these labels translated (NOT backend data)
   const UI = {
     title: isSi ? t("dqTitle") : "Daily Quiz",
     selectSubject: isSi ? t("selectSubject") : "Select Subject",
@@ -137,7 +137,6 @@ export default function DailyQuiz() {
             itemStyle={styles.pickerItem}
             dropdownIconColor="#2563EB"
           >
-            {/* ✅ Not requested to translate placeholder */}
             <Picker.Item label="Select Subject" value="" />
             {subjectsToShow.map((sub) => (
               <Picker.Item key={sub} label={sub} value={sub} />
@@ -156,8 +155,6 @@ export default function DailyQuiz() {
         >
           <Text style={[styles.startBtnText, isSi ? sinFont("bold") : null]}>{UI.continue}</Text>
         </Pressable>
-
-       
       </View>
     </View>
   );
@@ -170,6 +167,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: 16,
+    paddingBottom: TAB_BAR_SPACE,
   },
 
   card: {
@@ -239,7 +237,6 @@ const styles = StyleSheet.create({
     color: "#0F172A",
   },
 
-  // ONLY this uses AbhayaLibre
   pickerItem: {
     fontFamily: "AbhayaLibre_700Bold",
     fontSize: 10,
@@ -284,6 +281,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: 16,
+    paddingBottom: TAB_BAR_SPACE,
   },
 
   primaryBtn: {
