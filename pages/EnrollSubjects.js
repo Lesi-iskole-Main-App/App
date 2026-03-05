@@ -107,7 +107,8 @@ export default function EnrollSubjects({ route }) {
     });
   };
 
-  const shouldCenterCards = Array.isArray(classes) && classes.length > 0 && classes.length <= 3;
+  const shouldCenterCards =
+    Array.isArray(classes) && classes.length > 0 && classes.length <= 3;
 
   return (
     <View style={styles.screen}>
@@ -180,9 +181,7 @@ export default function EnrollSubjects({ route }) {
             </Text>
 
             {!!selectedClass?.className && (
-              <Text style={styles.modalClassText}>
-                {selectedClass.className}
-              </Text>
+              <Text style={styles.modalClassText}>{selectedClass.className}</Text>
             )}
 
             <TextInput
@@ -238,8 +237,8 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: "#F8FAFC",
-    padding: 16,
-    paddingTop: 22,
+    paddingHorizontal: 14,
+    paddingTop: 14,
   },
 
   stateWrap: {
@@ -250,14 +249,19 @@ const styles = StyleSheet.create({
   },
 
   loaderBox: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
+    width: 50,
+    height: 50,
+    borderRadius: 16,
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
     borderColor: "#E2E8F0",
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
 
   retryWrap: {
@@ -266,10 +270,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#D7E5FF",
   },
 
   scrollContent: {
-    paddingBottom: 24,
+    paddingBottom: 22,
   },
 
   scrollCentered: {
@@ -298,22 +304,22 @@ const styles = StyleSheet.create({
 
   emptyCard: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 22,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: "#E2E8F0",
-    paddingVertical: 28,
+    paddingVertical: 26,
     paddingHorizontal: 18,
     alignItems: "center",
     shadowColor: "#0F172A",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
     elevation: 2,
   },
 
   emptyTitle: {
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "800",
     color: "#0F172A",
   },
 
@@ -328,7 +334,7 @@ const styles = StyleSheet.create({
 
   modalBackdrop: {
     flex: 1,
-    backgroundColor: "rgba(15,23,42,0.38)",
+    backgroundColor: "rgba(15,23,42,0.34)",
     justifyContent: "center",
     alignItems: "center",
     padding: 18,
@@ -336,23 +342,23 @@ const styles = StyleSheet.create({
 
   modalCard: {
     width: "100%",
-    maxWidth: 370,
+    maxWidth: 360,
     backgroundColor: "#FFFFFF",
-    borderRadius: 24,
-    paddingHorizontal: 18,
-    paddingVertical: 20,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 18,
     borderWidth: 1,
     borderColor: "#E2E8F0",
     shadowColor: "#0F172A",
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 18,
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
     elevation: 4,
   },
 
   modalBadge: {
     alignSelf: "center",
-    backgroundColor: "#EAF1FF",
+    backgroundColor: "#EEF4FF",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
@@ -361,30 +367,30 @@ const styles = StyleSheet.create({
 
   modalBadgeText: {
     color: "#214294",
-    fontSize: 12,
-    fontWeight: "600",
+    fontSize: 11,
+    fontWeight: "700",
   },
 
   modalTitle: {
     fontSize: 18,
-    fontWeight: "700",
+    fontWeight: "800",
     color: "#0F172A",
     textAlign: "center",
   },
 
   modalText: {
     marginTop: 8,
-    fontSize: 14,
-    fontWeight: "400",
-    color: "#475569",
+    fontSize: 13,
+    fontWeight: "500",
+    color: "#64748B",
     textAlign: "center",
-    lineHeight: 21,
+    lineHeight: 20,
   },
 
   modalClassText: {
     marginTop: 8,
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: "700",
     color: "#214294",
     textAlign: "center",
     lineHeight: 20,
@@ -393,11 +399,11 @@ const styles = StyleSheet.create({
   input: {
     marginTop: 12,
     borderWidth: 1,
-    borderColor: "#CBD5E1",
+    borderColor: "#D6DEE8",
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    fontWeight: "400",
+    fontWeight: "500",
     fontSize: 14,
     color: "#0F172A",
     backgroundColor: "#F8FAFC",
@@ -411,40 +417,40 @@ const styles = StyleSheet.create({
   },
 
   modalBtn: {
-    minWidth: 110,
+    minWidth: 104,
     paddingVertical: 12,
     paddingHorizontal: 16,
-    borderRadius: 14,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
   },
 
   cancelBtn: {
-    backgroundColor: "#F1F5F9",
+    backgroundColor: "#F8FAFC",
     borderWidth: 1,
     borderColor: "#E2E8F0",
   },
 
   submitBtn: {
-    backgroundColor: "#16A34A",
+    backgroundColor: "#214294",
   },
 
   cancelBtnText: {
     color: "#334155",
-    fontWeight: "500",
+    fontWeight: "700",
     fontSize: 14,
   },
 
   submitBtnText: {
     color: "#FFFFFF",
-    fontWeight: "600",
+    fontWeight: "700",
     fontSize: 14,
   },
 
   syncText: {
     marginTop: 12,
     color: "#64748B",
-    fontWeight: "400",
+    fontWeight: "500",
     fontSize: 12,
     textAlign: "center",
   },

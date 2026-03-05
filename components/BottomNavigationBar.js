@@ -1,4 +1,3 @@
-// components/BottomNavigationBar.js
 import React from "react";
 import { View, Text, StyleSheet, Pressable, Platform } from "react-native";
 import { useNavigation, useNavigationState } from "@react-navigation/native";
@@ -13,29 +12,28 @@ const BAR_HEIGHT = 64;
 
 const ICON_COLOR = "#1153ec";
 
-// ✅ Do not hide on EnrollSubjects now
+// Do not hide on EnrollSubjects now
 const HIDE_BOTTOM_BAR_ON = new Set([]);
 
 export default function BottomNavigationBar() {
   const navigation = useNavigation();
   const { t, navFont } = useT();
 
-  // ✅ hooks first
+  // all hooks must run every render in the same order
   const currentRouteName = useNavigationState(
     (state) => state.routes[state.index]?.name
   );
 
-  const user =
-    useSelector((s) => s?.user?.user) || useSelector((s) => s?.auth?.user);
+  const userFromUserSlice = useSelector((s) => s?.user?.user);
+  const userFromAuthSlice = useSelector((s) => s?.auth?.user);
+  const user = userFromUserSlice || userFromAuthSlice || null;
 
   const level = user?.selectedLevel || user?.level || null;
 
-  // ✅ rules
   const isAL = String(level || "").toLowerCase() === "al";
-  const showLMS = !isAL;      // hide LMS on AL
-  const showLive = !isAL;     // ✅ hide Live on AL
+  const showLMS = !isAL;
+  const showLive = !isAL;
 
-  // ✅ hide after hooks
   if (HIDE_BOTTOM_BAR_ON.has(currentRouteName)) return null;
 
   return (
@@ -49,7 +47,6 @@ export default function BottomNavigationBar() {
             onPress={() => navigation.navigate("Home")}
           />
 
-          {/* ✅ Live hidden for AL */}
           {showLive && (
             <NavItem
               icon="radio"
@@ -59,7 +56,6 @@ export default function BottomNavigationBar() {
             />
           )}
 
-          {/* ✅ keep center gap only when LMS button is shown */}
           {showLMS && <View style={styles.slotCenter} />}
 
           <NavItem
@@ -69,7 +65,6 @@ export default function BottomNavigationBar() {
             onPress={() => navigation.navigate("Result")}
           />
 
-          {/* ✅ Bottom bar Enroll button goes ONLY to Registersubject */}
           <NavItem
             icon="clipboard"
             label={t("navEnroll")}
@@ -79,7 +74,6 @@ export default function BottomNavigationBar() {
         </View>
       </View>
 
-      {/* ✅ LMS button hidden for AL */}
       {showLMS && (
         <Pressable
           onPress={() => navigation.navigate("LMS")}

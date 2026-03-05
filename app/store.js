@@ -9,12 +9,12 @@ import enrollReducer from "./features/enrollSlice";
 import liveUiReducer from "./features/liveSlice";
 import paperReducer from "./features/paperSlice";
 
-// ✅ language
+// language
 import languageSelectionReducer from "./features/languageSelectionSlice";
 import rankReducer from "./features/rankSlice";
 import { rankApi } from "./rankApi";
 
-// ✅ NEW progress
+// progress
 import progressReducer from "./features/progressSlice";
 import { progressApi } from "./progressApi";
 
@@ -30,6 +30,9 @@ import { classApi } from "./classApi";
 import { lessonApi } from "./lessonApi";
 import { paymentApi } from "./paymentApi";
 
+// ✅ IMPORTANT: add languageApi
+import { languageApi } from "./languageApi";
+
 const store = configureStore({
   reducer: {
     auth: authReducer,
@@ -43,10 +46,10 @@ const store = configureStore({
     rank: rankReducer,
     languageSelection: languageSelectionReducer,
 
-    // ✅ progress state
+    // progress state
     progress: progressReducer,
 
-    // ✅ RTK Query reducers
+    // RTK Query reducers
     [paymentApi.reducerPath]: paymentApi.reducer,
     [attemptApi.reducerPath]: attemptApi.reducer,
     [authApi.reducerPath]: authApi.reducer,
@@ -59,7 +62,10 @@ const store = configureStore({
     [liveApi.reducerPath]: liveApi.reducer,
     [rankApi.reducerPath]: rankApi.reducer,
 
-    // ✅ progress api reducer
+    // ✅ add languageApi reducer
+    [languageApi.reducerPath]: languageApi.reducer,
+
+    // progress api reducer
     [progressApi.reducerPath]: progressApi.reducer,
   },
 
@@ -77,7 +83,10 @@ const store = configureStore({
       paymentApi.middleware,
       rankApi.middleware,
 
-      // ✅ progress middleware
+      // ✅ add languageApi middleware
+      languageApi.middleware,
+
+      // progress middleware
       progressApi.middleware
     ),
 });

@@ -10,6 +10,11 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { useGetLessonsByClassIdQuery } from "../app/lessonApi";
 
+import useT from "../app/i18n/useT";
+
+const PRIMARY = "#1153ec"; // ✅ match DailyQuizMenu title
+const TAB_BAR_SPACE = 110; // ✅ avoid bottom nav overlap
+
 const cleanDisplayText = (value) => {
   const raw = String(value || "").trim();
   if (!raw) return "";
@@ -18,6 +23,8 @@ const cleanDisplayText = (value) => {
 
 export default function Lessons({ route }) {
   const navigation = useNavigation();
+  const { t, lang, sinFont } = useT();
+  const isSi = lang === "si";
 
   const classId = route?.params?.classId || "";
   const className = route?.params?.className || "";
@@ -75,11 +82,16 @@ export default function Lessons({ route }) {
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+      {/* ✅ Title like DailyQuizMenu */}
+      <Text style={[styles.pageTitle, isSi ? sinFont("bold") : null]}>
+        {t("lessonsTitle")}
+      </Text>
+
       {!classId ? (
         <Text style={styles.centerInfo}>Missing class</Text>
       ) : isLoading ? (
         <View style={styles.stateWrap}>
-          <ActivityIndicator size="small" color="#2563EB" />
+          <ActivityIndicator size="small" color={PRIMARY} />
           <Text style={styles.infoText}>Loading lessons...</Text>
         </View>
       ) : isError ? (
@@ -94,7 +106,7 @@ export default function Lessons({ route }) {
       ) : (
         sortedLessons.map((lesson, idx) => {
           const lessonTitle =
-            cleanDisplayText(lesson?.title) || `Lesson ${idx + 1}`;
+            cleanDisplayText(lesson?.title) || `${t("lessonWord")} ${idx + 1}`;
           const lessonDescription =
             cleanDisplayText(lesson?.description) || "No description available.";
 
@@ -102,17 +114,32 @@ export default function Lessons({ route }) {
             <View style={styles.card} key={lesson?._id || String(idx)}>
               <View style={styles.headerRow}>
                 <View style={styles.lessonBadge}>
-                  <Text style={styles.lessonBadgeText}>Lesson {idx + 1}</Text>
+                  <Text
+                    style={[
+                      styles.lessonBadgeText,
+                      isSi ? sinFont("bold") : null,
+                    ]}
+                  >
+                    {t("lessonWord")} {idx + 1}
+                  </Text>
                 </View>
 
                 <View style={styles.metaWrap}>
                   <View style={styles.metaBox}>
-                    <Text style={styles.metaLabel}>Date</Text>
+                    <Text
+                      style={[styles.metaLabel, isSi ? sinFont("bold") : null]}
+                    >
+                      {t("dateShort")}
+                    </Text>
                     <Text style={styles.metaValue}>{lesson?.date || "-"}</Text>
                   </View>
 
                   <View style={styles.metaBox}>
-                    <Text style={styles.metaLabel}>Time</Text>
+                    <Text
+                      style={[styles.metaLabel, isSi ? sinFont("bold") : null]}
+                    >
+                      {t("timeShort")}
+                    </Text>
                     <Text style={styles.metaValue}>
                       {timeWithDot(lesson?.time) || "-"}
                     </Text>
@@ -127,7 +154,9 @@ export default function Lessons({ route }) {
               <View style={styles.divider} />
 
               <View style={styles.descCard}>
-                <Text style={styles.descLabel}>Description</Text>
+                <Text style={[styles.descLabel, isSi ? sinFont("bold") : null]}>
+                  {t("descriptionShort")}
+                </Text>
                 <Text style={styles.descText} numberOfLines={3}>
                   {lessonDescription}
                 </Text>
@@ -141,7 +170,9 @@ export default function Lessons({ route }) {
                   ]}
                   onPress={() => onWatchNow(lesson, idx)}
                 >
-                  <Text style={styles.watchText}>Watch Now</Text>
+                  <Text style={[styles.watchText, isSi ? sinFont("bold") : null]}>
+                    {t("watchNowShort")}
+                  </Text>
                 </Pressable>
               </View>
             </View>
@@ -158,10 +189,20 @@ const styles = StyleSheet.create({
     backgroundColor: "#F1F5F9",
   },
 
+  // ✅ only changed paddingBottom for bottom bar space
   content: {
     paddingHorizontal: 14,
     paddingTop: 14,
-    paddingBottom: 120,
+    paddingBottom: TAB_BAR_SPACE,
+  },
+
+  // ✅ title like DailyQuizMenu
+  pageTitle: {
+    fontSize: 22,
+    fontWeight: "900",
+    color: PRIMARY,
+    textAlign: "center",
+    marginBottom: 15,
   },
 
   stateWrap: {
@@ -187,7 +228,7 @@ const styles = StyleSheet.create({
   },
 
   tryAgain: {
-    color: "#2563EB",
+    color: PRIMARY,
     fontWeight: "700",
     fontSize: 13,
   },
@@ -200,7 +241,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 
-  // compact card like Live page, same design kept
+  // card design unchanged
   card: {
     backgroundColor: "#FFFFFF",
     borderRadius: 18,

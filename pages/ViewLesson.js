@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -6,12 +6,17 @@ import {
   ScrollView,
   Dimensions,
   Platform,
+  Pressable,
+  Modal,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 
 import CrossWebView from "../components/CrossWebView";
 import YoutubePlayerBox from "../components/YoutubePlayerBox";
+import useT from "../app/i18n/useT";
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
 
 function getYouTubeId(url = "") {
   if (!url) return "";
@@ -28,16 +33,21 @@ function getYouTubeId(url = "") {
   return "";
 }
 
-export default function ReviewComponent({ route }) {
-  const title = route?.params?.title ?? "uQ,sl .‚; l¾u";
-  const youtubeUrl = route?.params?.youtubeUrl ?? "https://youtu.be/30cffBrABao";
+export default function ViewLessonVideo({ route }) {
+  const { t, lang } = useT();
+  const isSi = lang === "si";
 
-  const description =
-    route?.params?.description ??
-    `f,ais biafldaf,a  hkq orejkaf.a wOHdmkh myiq" kùk iy úYajdiodhl f,i f.khkak ks¾udKh l<  wOHdmk fhÿuls'`;
+  const title = route?.params?.title ?? "Lesson Video";
+  const youtubeUrl =
+    route?.params?.youtubeUrl ?? "https://youtu.be/30cffBrABao";
+
+  const [fullOpen, setFullOpen] = useState(false);
 
   const videoId = useMemo(() => getYouTubeId(youtubeUrl), [youtubeUrl]);
-  const playerHeight = Math.round((width - 32) * 0.56);
+
+  const cardWidth = width - 32;
+  const normalHeight = Math.round(cardWidth * 0.56);
+  const fullHeight = Math.round(height * 0.34);
 
   const playerHtml = useMemo(() => {
     if (!videoId) return "";
@@ -52,88 +62,252 @@ export default function ReviewComponent({ route }) {
         <head>
           <meta name="viewport" content="width=device-width, initial-scale=1"/>
           <style>
-            html, body { margin:0; padding:0; background:#0B1220; }
-            iframe { width:100%; height:100%; border:0; }
+            html, body {
+              margin:0;
+              padding:0;
+              background:#000;
+              width:100%;
+              height:100%;
+              overflow:hidden;
+            }
+            iframe {
+              width:100%;
+              height:100%;
+              border:0;
+            }
           </style>
         </head>
         <body>
-          <iframe src="${src}" allowfullscreen></iframe>
+          <iframe
+            src="${src}"
+            allow="autoplay; encrypted-media; picture-in-picture"
+            allowfullscreen
+          ></iframe>
         </body>
       </html>
     `;
   }, [videoId]);
 
+  const renderPlayer = (playerHeight) => {
+    if (!videoId) {
+      return (
+        <View style={styles.playerFallback}>
+          <Ionicons name="alert-circle-outline" size={22} color="#FFFFFF" />
+          <Text style={styles.fallbackText}>Invalid YouTube link</Text>
+        </View>
+      );
+    }
+
+    if (Platform.OS === "web") {
+      return (
+        <CrossWebView source={{ html: playerHtml }} style={styles.webview} />
+      );
+    }
+
+    return <YoutubePlayerBox videoId={videoId} height={playerHeight} />;
+  };
+
   return (
     <View style={styles.screen}>
-      <ScrollView contentContainerStyle={styles.content}>
-        {/* ✅ TITLE */}
-        <Text style={styles.titleText} numberOfLines={1}>
-          {title}
-        </Text>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.centerWrap}>
+          <Text style={styles.titleText} numberOfLines={2}>
+            {title}
+          </Text>
 
-        {/* ✅ VIDEO */}
-        <View style={styles.playerCard}>
-          <View style={[styles.playerBox, { height: playerHeight }]}>
-            {!videoId ? (
-              <View style={styles.playerFallback}>
-                <Text style={styles.fallbackText}>Invalid YouTube link</Text>
-              </View>
-            ) : Platform.OS === "web" ? (
-              <CrossWebView source={{ html: playerHtml }} style={styles.webview} />
-            ) : (
-              <YoutubePlayerBox videoId={videoId} height={playerHeight} />
-            )}
+          <View style={[styles.mainCard, { width: cardWidth }]}>
+            <View style={[styles.playerBox, { height: normalHeight }]}>
+              {renderPlayer(normalHeight)}
+            </View>
+
+            <View style={styles.actionRow}>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.fullBtn,
+                  pressed && styles.fullBtnPressed,
+                ]}
+                onPress={() => setFullOpen(true)}
+              >
+                <Ionicons name="expand-outline" size={14} color="#FFFFFF" />
+                <Text style={styles.fullBtnText}>View</Text>
+              </Pressable>
+            </View>
+
+            {/* ✅ Sinhala = AbhayaLibre (Unicode Sinhala looks correct) */}
+            <Text
+              style={[
+                styles.helperText,
+                isSi && styles.helperTextSi,
+              ]}
+            >
+              {t("tapViewFullScreen")}
+            </Text>
           </View>
         </View>
-
-        {/* ✅ DESCRIPTION */}
-        <Text style={styles.descText}>{description}</Text>
       </ScrollView>
+
+      <Modal visible={fullOpen} animationType="fade" transparent={false}>
+        <SafeAreaView style={styles.fullScreenWrap}>
+          <View style={styles.fullHeader}>
+            <Text style={styles.fullHeaderText}>{title}</Text>
+
+            <Pressable
+              style={({ pressed }) => [
+                styles.closeBtn,
+                pressed && styles.closeBtnPressed,
+              ]}
+              onPress={() => setFullOpen(false)}
+            >
+              <Ionicons name="close" size={22} color="#FFFFFF" />
+            </Pressable>
+          </View>
+
+          <View style={styles.fullPlayerArea}>
+            <View style={[styles.fullPlayerBox, { height: fullHeight }]}>
+              {renderPlayer(fullHeight)}
+            </View>
+          </View>
+        </SafeAreaView>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#F8FAFC" },
-  content: { padding: 16, paddingBottom: 40 },
 
-  /* ✅ Title like Live page style */
+  content: {
+    flexGrow: 1,
+    justifyContent: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 24,
+  },
+
+  centerWrap: { alignItems: "center", justifyContent: "center" },
+
   titleText: {
-    fontSize: 13,
+    fontSize: 20,
     fontWeight: "900",
     color: "#0F172A",
     textAlign: "center",
     marginBottom: 10,
-    lineHeight: 18,
+    width: "100%",
+    lineHeight: 26,
   },
 
-  /* ✅ Video */
-  playerCard: { borderRadius: 18, marginBottom: 14 },
+  mainCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.05,
+    shadowRadius: 14,
+    elevation: 3,
+  },
+
   playerBox: {
     width: "100%",
     borderRadius: 14,
     overflow: "hidden",
     backgroundColor: "#0B1220",
   },
+
   webview: { width: "100%", height: "100%" },
 
   playerFallback: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-  },
-  fallbackText: {
-    color: "#FFFFFF",
-    fontWeight: "800",
+    gap: 8,
+    backgroundColor: "#0B1220",
   },
 
-  /* ✅ Description like Live page style */
-  descText: {
-    fontSize: 10,
+  fallbackText: { color: "#FFFFFF", fontWeight: "800", fontSize: 13 },
+
+  actionRow: { marginTop: 10, alignItems: "flex-end" },
+
+  fullBtn: {
+    height: 34,
+    minWidth: 82,
+    borderRadius: 10,
+    backgroundColor: "#214294",
+    paddingHorizontal: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+
+  fullBtnPressed: { opacity: 0.95, transform: [{ scale: 0.985 }] },
+
+  fullBtnText: { color: "#FFFFFF", fontSize: 12, fontWeight: "800" },
+
+  helperText: {
+    marginTop: 10,
+    fontSize: 11,
     fontWeight: "700",
     color: "#64748B",
-    textAlign: "left",
-    lineHeight: 16,
-    marginTop: 6,
+    textAlign: "center",
+    lineHeight: 17,
+  },
+
+  // ✅ use Unicode Sinhala font only for this helper line
+  helperTextSi: {
+    fontFamily: "AbhayaLibre_700Bold",
+    fontWeight: "normal",
+  },
+
+  fullScreenWrap: { flex: 1, backgroundColor: "#020617" },
+
+  fullHeader: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.08)",
+  },
+
+  fullHeaderText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "800",
+    flex: 1,
+    textAlign: "center",
+    paddingLeft: 38,
+    paddingRight: 10,
+  },
+
+  closeBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "rgba(255,255,255,0.10)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  closeBtnPressed: { opacity: 0.9 },
+
+  fullPlayerArea: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 12,
+  },
+
+  fullPlayerBox: {
+    width: "100%",
+    borderRadius: 16,
+    overflow: "hidden",
+    backgroundColor: "#000000",
   },
 });

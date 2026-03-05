@@ -394,7 +394,7 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     color: PRIMARY,
     textAlign: "center",
-    marginBottom: 4,
+    marginBottom: 15,
   },
 
   list: { paddingBottom: TAB_BAR_SPACE, gap: 12 },

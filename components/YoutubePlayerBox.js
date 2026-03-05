@@ -19,14 +19,14 @@ export default function YoutubePlayerBox({ videoId, height }) {
         videoId={videoId}
         onChangeState={onStateChange}
         forceAndroidAutoplay={false}
-        webViewStyle={{ opacity: 0.99 }}
+        webViewStyle={{ opacity: 0.99, backgroundColor: "#0B1220" }}
         initialPlayerParams={{
-          controls: true,          // ✅ REQUIRED for fullscreen
+          controls: true,
           modestbranding: true,
           rel: false,
           iv_load_policy: 3,
           playsinline: true,
-          fullscreen: true,        // ✅ allow fullscreen
+          fullscreen: true,
         }}
       />
     </View>
