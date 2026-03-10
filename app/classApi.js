@@ -1,4 +1,3 @@
-// app/classApi.js
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { BASE_URL } from "./api/api";
 
@@ -16,12 +15,24 @@ export const classApi = createApi({
   }),
   endpoints: (builder) => ({
     getClassesByGradeAndSubject: builder.query({
-      query: ({ gradeNumber, subjectName }) => ({
-        url: `/public?gradeNumber=${encodeURIComponent(
-          gradeNumber
-        )}&subjectName=${encodeURIComponent(subjectName)}`,
-        method: "GET",
-      }),
+      query: ({ gradeNumber, subjectName = "", streamName = "" }) => {
+        const params = new URLSearchParams();
+
+        params.set("gradeNumber", String(gradeNumber));
+
+        if (String(subjectName || "").trim()) {
+          params.set("subjectName", String(subjectName).trim());
+        }
+
+        if (String(streamName || "").trim()) {
+          params.set("streamName", String(streamName).trim());
+        }
+
+        return {
+          url: `/public?${params.toString()}`,
+          method: "GET",
+        };
+      },
       transformResponse: (res) => {
         if (Array.isArray(res?.classes)) return res.classes;
         return [];

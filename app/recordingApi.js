@@ -1,10 +1,10 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { BASE_URL } from "./api/api";
 
-export const liveApi = createApi({
-  reducerPath: "liveApi",
+export const recordingApi = createApi({
+  reducerPath: "recordingApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: `${BASE_URL}/api/live`,
+    baseUrl: `${BASE_URL}/api/recording`,
     credentials: "include",
     prepareHeaders: (headers, { getState }) => {
       const token = getState()?.auth?.token;
@@ -13,32 +13,20 @@ export const liveApi = createApi({
       return headers;
     },
   }),
-  tagTypes: ["Live"],
+  tagTypes: ["Recording"],
   endpoints: (builder) => ({
-    getStudentLives: builder.query({
-      query: () => ({
-        url: "/student",
-        method: "GET",
-      }),
-      transformResponse: (res) => {
-        if (Array.isArray(res?.lives)) return { lives: res.lives };
-        return { lives: [] };
-      },
-      providesTags: ["Live"],
-    }),
-
-    getLiveByClassId: builder.query({
+    getRecordingsByClassId: builder.query({
       query: (classId) => ({
         url: `/class/${classId}`,
         method: "GET",
       }),
       transformResponse: (res) => {
-        if (Array.isArray(res?.lives)) return res.lives;
+        if (Array.isArray(res?.recordings)) return res.recordings;
         return [];
       },
-      providesTags: ["Live"],
+      providesTags: ["Recording"],
     }),
   }),
 });
 
-export const { useGetStudentLivesQuery, useGetLiveByClassIdQuery } = liveApi;
+export const { useGetRecordingsByClassIdQuery } = recordingApi;

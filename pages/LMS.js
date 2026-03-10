@@ -1,5 +1,12 @@
 import React, { useMemo, useEffect, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, Pressable } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Pressable,
+  ActivityIndicator,
+} from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import Svg, { Path } from "react-native-svg";
 import { useSelector, useDispatch } from "react-redux";
@@ -7,6 +14,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { clearGradeSelection } from "../app/features/authSlice";
 import { updateUserFields, setUser } from "../app/features/userSlice";
 import { useSaveStudentGradeSelectionMutation } from "../app/userApi";
+import { useGetStreamsByGradeNumberQuery } from "../app/gradeApi";
 
 import useT from "../app/i18n/useT";
 
@@ -63,19 +71,14 @@ export default function LMS() {
   const gradeNumberDb =
     user?.selectedGradeNumber ?? user?.gradeNumber ?? user?.grade ?? null;
 
-  // ✅ A/L not available
-  if (level === "al") {
-    return (
-      <View style={styles.center}>
-        <Text style={[styles.centerTitle, lang === "si" && sinFont("bold")]}>
-          LMS Not Available
-        </Text>
-        <Text style={[styles.centerDesc, lang === "si" && sinFont()]}>
-          LMS is available for Primary and O/L only.
-        </Text>
-      </View>
-    );
-  }
+  const {
+    data: streams = [],
+    isLoading: streamsLoading,
+    isError: streamsError,
+    refetch: refetchStreams,
+  } = useGetStreamsByGradeNumberQuery(gradeNumberDb, {
+    skip: !(level === "al" && gradeNumberDb),
+  });
 
   // ✅ Auto-save grade selection if needed
   useEffect(() => {
@@ -153,7 +156,6 @@ export default function LMS() {
   const gradeWord = useMemo(() => {
     const g = Number(gradeNumberDb);
 
-    // English
     const en = {
       1: "One",
       2: "Two",
@@ -170,7 +172,6 @@ export default function LMS() {
       13: "Thirteen",
     };
 
-    // ✅ Your legacy Sinhala (FM typed)
     const si = {
       1: t("grade1"),
       2: t("grade2"),
@@ -216,16 +217,83 @@ export default function LMS() {
   }, [gradeNumberDb]);
 
   const numberText = String(gradeNumberDb).padStart(2, "0");
-
-  // ✅ keep this param same for your Subjects page (DO NOT CHANGE)
   const gradeLabel = `Grade ${gradeNumberDb}`;
 
+  const onOpenGradeClasses = () => {
+    navigation.navigate("EnrollSubjects", {
+      grade: gradeLabel,
+      gradeNumber: gradeNumberDb,
+      subjectName: "",
+      streamName: "",
+    });
+  };
+
+  const onOpenStreamClasses = (streamName) => {
+    navigation.navigate("EnrollSubjects", {
+      grade: gradeLabel,
+      gradeNumber: gradeNumberDb,
+      subjectName: "",
+      streamName: streamName || "",
+    });
+  };
+
+  // ✅ A/L only: show stream selection
+  if (level === "al") {
+    return (
+      <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+        {streamsLoading ? (
+          <View style={styles.center}>
+            <ActivityIndicator size="small" color="#214294" />
+            <Text style={styles.centerDesc}>Loading streams...</Text>
+          </View>
+        ) : streamsError ? (
+          <View style={styles.center}>
+            <Text style={styles.centerTitle}>Failed to load streams</Text>
+            <Pressable style={styles.backBtn} onPress={() => refetchStreams?.()}>
+              <Text style={styles.backBtnText}>Try again</Text>
+            </Pressable>
+          </View>
+        ) : streams.length === 0 ? (
+          <View style={styles.center}>
+            <Text style={styles.centerTitle}>No Streams Found</Text>
+            <Text style={styles.centerDesc}>
+              No streams are available for this grade yet.
+            </Text>
+          </View>
+        ) : (
+          streams.map((item, index) => {
+            const streamName =
+              String(item?.stream || "").trim() || `Stream ${index + 1}`;
+
+            return (
+              <Pressable
+                key={item?._id || `${streamName}-${index}`}
+                style={styles.fullCard}
+                onPress={() => onOpenStreamClasses(streamName)}
+              >
+                <View style={styles.ribbonCorner}>
+                  <RibbonV color={gradeColor} number={numberText} />
+                </View>
+
+                <View pointerEvents="none" style={styles.absoluteCenter}>
+                  <Text
+                    style={[styles.cardText, lang === "si" && sinFont("bold")]}
+                  >
+                    {streamName}
+                  </Text>
+                </View>
+              </Pressable>
+            );
+          })
+        )}
+      </ScrollView>
+    );
+  }
+
+  // ✅ Primary / O/L: same LMS card UI, direct open classes
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <Pressable
-        style={styles.fullCard}
-        onPress={() => navigation.navigate("Subjects", { grade: gradeLabel })}
-      >
+      <Pressable style={styles.fullCard} onPress={onOpenGradeClasses}>
         <View style={styles.ribbonCorner}>
           <RibbonV color={gradeColor} number={numberText} />
         </View>
@@ -264,6 +332,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 10,
     position: "relative",
+    marginBottom: 12,
   },
 
   ribbonCorner: { position: "absolute", top: 0, left: 0, zIndex: 5 },

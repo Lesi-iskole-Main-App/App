@@ -5,20 +5,18 @@ import userReducer from "./features/userSlice";
 import gradeReducer from "./features/gradeSlice";
 import lessonReducer from "./features/lessonSlice";
 import enrollReducer from "./features/enrollSlice";
+import recordingReducer from "./features/recordingSlice";
 
 import liveUiReducer from "./features/liveSlice";
 import paperReducer from "./features/paperSlice";
 
-// language
 import languageSelectionReducer from "./features/languageSelectionSlice";
 import rankReducer from "./features/rankSlice";
 import { rankApi } from "./rankApi";
 
-// progress
 import progressReducer from "./features/progressSlice";
 import { progressApi } from "./progressApi";
 
-// RTK Query apis
 import { attemptApi } from "./attemptApi";
 import { liveApi } from "./liveApi";
 import { paperApi } from "./paperApi";
@@ -29,9 +27,8 @@ import { userApi } from "./userApi";
 import { classApi } from "./classApi";
 import { lessonApi } from "./lessonApi";
 import { paymentApi } from "./paymentApi";
-
-// ✅ IMPORTANT: add languageApi
 import { languageApi } from "./languageApi";
+import { recordingApi } from "./recordingApi";
 
 const store = configureStore({
   reducer: {
@@ -40,16 +37,14 @@ const store = configureStore({
     grade: gradeReducer,
     lesson: lessonReducer,
     enroll: enrollReducer,
+    recording: recordingReducer,
 
     liveUi: liveUiReducer,
     paper: paperReducer,
     rank: rankReducer,
     languageSelection: languageSelectionReducer,
-
-    // progress state
     progress: progressReducer,
 
-    // RTK Query reducers
     [paymentApi.reducerPath]: paymentApi.reducer,
     [attemptApi.reducerPath]: attemptApi.reducer,
     [authApi.reducerPath]: authApi.reducer,
@@ -61,12 +56,9 @@ const store = configureStore({
     [paperApi.reducerPath]: paperApi.reducer,
     [liveApi.reducerPath]: liveApi.reducer,
     [rankApi.reducerPath]: rankApi.reducer,
-
-    // ✅ add languageApi reducer
     [languageApi.reducerPath]: languageApi.reducer,
-
-    // progress api reducer
     [progressApi.reducerPath]: progressApi.reducer,
+    [recordingApi.reducerPath]: recordingApi.reducer,
   },
 
   middleware: (getDefaultMiddleware) =>
@@ -82,12 +74,9 @@ const store = configureStore({
       liveApi.middleware,
       paymentApi.middleware,
       rankApi.middleware,
-
-      // ✅ add languageApi middleware
       languageApi.middleware,
-
-      // progress middleware
-      progressApi.middleware
+      progressApi.middleware,
+      recordingApi.middleware
     ),
 });
 

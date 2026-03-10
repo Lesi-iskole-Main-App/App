@@ -13,20 +13,35 @@ export const enrollApi = createApi({
       return headers;
     },
   }),
-  tagTypes: ["Enroll"],
+  tagTypes: ["Enroll", "ApprovedClasses"],
   endpoints: (builder) => ({
     requestEnroll: builder.mutation({
       query: (body) => ({
         url: "/request",
         method: "POST",
-        body, // { classId, studentName, studentPhone }
+        body,
       }),
-      invalidatesTags: ["Enroll"],
+      invalidatesTags: ["Enroll", "ApprovedClasses"],
     }),
 
     getMyEnrollRequests: builder.query({
-      query: () => "/my",
+      query: () => ({
+        url: "/my",
+        method: "GET",
+      }),
       providesTags: ["Enroll"],
+    }),
+
+    getMyApprovedClasses: builder.query({
+      query: () => ({
+        url: "/my-approved-classes",
+        method: "GET",
+      }),
+      transformResponse: (res) => {
+        if (Array.isArray(res?.items)) return res.items;
+        return [];
+      },
+      providesTags: ["ApprovedClasses"],
     }),
   }),
 });
@@ -34,4 +49,5 @@ export const enrollApi = createApi({
 export const {
   useRequestEnrollMutation,
   useGetMyEnrollRequestsQuery,
+  useGetMyApprovedClassesQuery,
 } = enrollApi;

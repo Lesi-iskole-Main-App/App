@@ -2,7 +2,6 @@ import React from "react";
 import { View, Text, StyleSheet, Pressable, Platform } from "react-native";
 import { useNavigation, useNavigationState } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
-import { useSelector } from "react-redux";
 
 import useT from "../app/i18n/useT";
 
@@ -19,27 +18,16 @@ export default function BottomNavigationBar() {
   const navigation = useNavigation();
   const { t, navFont } = useT();
 
-  // all hooks must run every render in the same order
   const currentRouteName = useNavigationState(
     (state) => state.routes[state.index]?.name
   );
-
-  const userFromUserSlice = useSelector((s) => s?.user?.user);
-  const userFromAuthSlice = useSelector((s) => s?.auth?.user);
-  const user = userFromUserSlice || userFromAuthSlice || null;
-
-  const level = user?.selectedLevel || user?.level || null;
-
-  const isAL = String(level || "").toLowerCase() === "al";
-  const showLMS = !isAL;
-  const showLive = !isAL;
 
   if (HIDE_BOTTOM_BAR_ON.has(currentRouteName)) return null;
 
   return (
     <View style={styles.root}>
       <View style={styles.shadowContainer}>
-        <View style={[styles.bar, !showLMS && styles.barNoLms]}>
+        <View style={styles.bar}>
           <NavItem
             icon="home"
             label={t("navHome")}
@@ -47,16 +35,14 @@ export default function BottomNavigationBar() {
             onPress={() => navigation.navigate("Home")}
           />
 
-          {showLive && (
-            <NavItem
-              icon="radio"
-              label={t("navLive")}
-              labelStyle={navFont("bold")}
-              onPress={() => navigation.navigate("Live")}
-            />
-          )}
+          <NavItem
+            icon="radio"
+            label={t("navLive")}
+            labelStyle={navFont("bold")}
+            onPress={() => navigation.navigate("Live")}
+          />
 
-          {showLMS && <View style={styles.slotCenter} />}
+          <View style={styles.slotCenter} />
 
           <NavItem
             icon="bar-chart"
@@ -69,25 +55,23 @@ export default function BottomNavigationBar() {
             icon="clipboard"
             label={t("navEnroll")}
             labelStyle={navFont("bold")}
-            onPress={() => navigation.navigate("Registersubject")}
+            onPress={() => navigation.navigate("RecordingClasses")}
           />
         </View>
       </View>
 
-      {showLMS && (
-        <Pressable
-          onPress={() => navigation.navigate("LMS")}
-          style={({ pressed }) => [
-            styles.centerButton,
-            pressed && styles.centerPressed,
-          ]}
-        >
-          <Ionicons name="school" size={36} color={ICON_COLOR} />
-          <Text style={[styles.centerLabel, navFont("bold")]}>
-            {t("navLms")}
-          </Text>
-        </Pressable>
-      )}
+      <Pressable
+        onPress={() => navigation.navigate("LMS")}
+        style={({ pressed }) => [
+          styles.centerButton,
+          pressed && styles.centerPressed,
+        ]}
+      >
+        <Ionicons name="school" size={36} color={ICON_COLOR} />
+        <Text style={[styles.centerLabel, navFont("bold")]}>
+          {t("navLms")}
+        </Text>
+      </Pressable>
     </View>
   );
 }
@@ -128,10 +112,6 @@ const styles = StyleSheet.create({
     borderRadius: BAR_RADIUS,
     flexDirection: "row",
     alignItems: "center",
-  },
-
-  barNoLms: {
-    paddingHorizontal: 6,
   },
 
   item: {

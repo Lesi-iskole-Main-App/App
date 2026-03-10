@@ -41,7 +41,10 @@ import ModelPaper from "./pages/Modelpaper";
 import PastPapers from "./pages/Pastpapers";
 
 import EnrollSubjects from "./pages/EnrollSubjects";
-import Registersubject from "./pages/Registersubject";
+
+import RecordingClasses from "./pages/RecordingClasses";
+import RecordingLessons from "./pages/RecordingLessons";
+import RecordingViewLesson from "./pages/RecordingViewLesson";
 
 import DailyQuizMenu from "./pages/DailyQuizzMenu";
 import TopicWiseMenu from "./pages/TopicWisemenu";
@@ -77,7 +80,10 @@ const SubjectsWithLayout = withSecondLayout(Subjects);
 const SubjectWithTeachersWithLayout = withSecondLayout(SubjectWithTeachers);
 
 const EnrollSubjectsWithLayout = withSecondLayout(EnrollSubjects);
-const RegistersubjectWithLayout = withSecondLayout(Registersubject);
+
+const RecordingClassesWithLayout = withSecondLayout(RecordingClasses);
+const RecordingLessonsWithLayout = withSecondLayout(RecordingLessons);
+const RecordingViewLessonWithLayout = withSecondLayout(RecordingViewLesson);
 
 const DailyQuizWithLayout = withSecondLayout(DailyQuiz);
 const TopicWisePaperWithLayout = withSecondLayout(TopicWisePaper);
@@ -102,8 +108,6 @@ export default function App() {
           FMEmaneex: require("./assets/fonts/FMEmaneex.ttf"),
           NotoSerifSinhala_700Bold,
           AbhayaLibre_700Bold,
-
-          // custom key for answers text
           AbhayaLibre_300Bold: AbhayaLibre_400Regular,
         });
       } catch (e) {
@@ -158,9 +162,18 @@ export default function App() {
               name="EnrollSubjects"
               component={EnrollSubjectsWithLayout}
             />
+
             <Stack.Screen
-              name="Registersubject"
-              component={RegistersubjectWithLayout}
+              name="RecordingClasses"
+              component={RecordingClassesWithLayout}
+            />
+            <Stack.Screen
+              name="RecordingLessons"
+              component={RecordingLessonsWithLayout}
+            />
+            <Stack.Screen
+              name="RecordingViewLesson"
+              component={RecordingViewLessonWithLayout}
             />
 
             <Stack.Screen name="DailyQuiz" component={DailyQuizWithLayout} />

@@ -1,9 +1,14 @@
 // pages/Live.js ✅ FULL CODE
+// ✅ KEEP SAME UI DESIGN
+// ✅ SHOW ONLY ENROLLED + APPROVED STUDENT LIVE CLASS CARDS
+// ✅ SHOW CARD ONLY IN THIS TIME WINDOW:
+//    1 hour before scheduled time -> 10 hours after scheduled time
 // ✅ ONLY these 5 texts translate when Sinhala (legacy font only for them):
 //    Live Classes, Date, Time, LIVE, Join Class
 // ✅ All other text stays English
 // ✅ Fetched data not translated
-import React, { useMemo } from "react";
+
+import React, { useMemo, useCallback } from "react";
 import {
   View,
   Text,
@@ -13,10 +18,9 @@ import {
   Linking,
   ActivityIndicator,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { useGetStudentLivesQuery } from "../app/liveApi";
 import useT from "../app/i18n/useT";
-
-const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
 const formatDate = (iso) => {
   try {
@@ -51,31 +55,38 @@ export default function Live() {
   const LBL_BOLD = isSi ? sinFont("bold") : null;
 
   const { data, isLoading, isFetching, error, refetch } =
-    useGetStudentLivesQuery();
+    useGetStudentLivesQuery(undefined, {
+      pollingInterval: 10000,
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
+    });
+
+  useFocusEffect(
+    useCallback(() => {
+      refetch?.();
+    }, [refetch])
+  );
 
   const lives = useMemo(() => {
     const list = data?.lives || [];
-    const now = Date.now();
 
-    return list
-      .filter((x) => {
-        const t = new Date(x?.scheduledAt).getTime();
-        if (!t || Number.isNaN(t)) return false;
-        return now - t <= ONE_DAY_MS;
-      })
-      .sort(
-        (a, b) =>
-          new Date(b.scheduledAt).getTime() - new Date(a.scheduledAt).getTime()
-      );
+    return [...list].sort(
+      (a, b) =>
+        new Date(a?.scheduledAt || 0).getTime() -
+        new Date(b?.scheduledAt || 0).getTime()
+    );
   }, [data]);
 
   const onJoin = async (url) => {
-    if (!url) return;
-    const can = await Linking.canOpenURL(url);
-    if (can) Linking.openURL(url);
+    try {
+      if (!url) return;
+      const can = await Linking.canOpenURL(url);
+      if (can) await Linking.openURL(url);
+    } catch (err) {
+      console.log("Failed to open zoom link:", err);
+    }
   };
 
-  // ✅ ONLY 5 strings translated
   const UI = {
     pageTitle: isSi ? t("liveTitle") : "Live Classes",
     date: isSi ? t("liveDate") : "Date",
@@ -88,7 +99,6 @@ export default function Live() {
     return (
       <View style={[styles.screen, styles.centerWrap]}>
         <ActivityIndicator size="large" color="#DC2626" />
-        {/* keep English */}
         <Text style={styles.stateText}>Loading live classes...</Text>
       </View>
     );
@@ -98,10 +108,8 @@ export default function Live() {
     return (
       <View style={[styles.screen, styles.centerWrap]}>
         <View style={styles.stateCard}>
-          {/* keep English */}
           <Text style={styles.errorTitle}>Failed to load live classes</Text>
           <Pressable onPress={refetch} style={styles.retryBtn}>
-            {/* keep English */}
             <Text style={styles.retryBtnText}>Retry</Text>
           </Pressable>
         </View>
@@ -111,19 +119,16 @@ export default function Live() {
 
   return (
     <View style={styles.screen}>
-      {/* ✅ translated title + legacy font only */}
       <Text style={[styles.pageTitle, LBL_BOLD]}>{UI.pageTitle}</Text>
 
       {isFetching ? (
         <View style={styles.refreshWrap}>
-          {/* keep English */}
           <Text style={styles.refreshText}>Refreshing...</Text>
         </View>
       ) : null}
 
       {lives.length === 0 ? (
         <View style={styles.emptyWrap}>
-          {/* keep English */}
           <Text style={styles.emptyText}>No live classes right now.</Text>
         </View>
       ) : (
@@ -142,11 +147,9 @@ export default function Live() {
               <View style={styles.card}>
                 <View style={styles.headerRow}>
                   <View style={styles.headerLeft}>
-                    {/* fetched title stays same */}
                     <Text style={styles.title} numberOfLines={1}>
                       {title}
                     </Text>
-                    {/* fetched teacher stays same */}
                     <Text style={styles.teacher} numberOfLines={1}>
                       {teacher}
                     </Text>
@@ -154,14 +157,14 @@ export default function Live() {
 
                   <View style={styles.liveBadge}>
                     <View style={styles.liveDot} />
-                    {/* ✅ translated LIVE badge + legacy font only */}
-                    <Text style={[styles.liveBadgeText, LBL_BOLD]}>{UI.live}</Text>
+                    <Text style={[styles.liveBadgeText, LBL_BOLD]}>
+                      {UI.live}
+                    </Text>
                   </View>
                 </View>
 
                 <View style={styles.infoRow}>
                   <View style={styles.infoItem}>
-                    {/* ✅ translated label + legacy font only */}
                     <Text style={[styles.infoLabel, LBL_REG]}>{UI.date}</Text>
                     <Text style={styles.infoValue} numberOfLines={1}>
                       {dateText || "-"}
@@ -171,7 +174,6 @@ export default function Live() {
                   <View style={styles.infoDivider} />
 
                   <View style={styles.infoItem}>
-                    {/* ✅ translated label + legacy font only */}
                     <Text style={[styles.infoLabel, LBL_REG]}>{UI.time}</Text>
                     <Text style={styles.infoValue} numberOfLines={1}>
                       {timeText || "-"}
@@ -183,7 +185,6 @@ export default function Live() {
                   style={styles.joinBtn}
                   onPress={() => onJoin(item?.zoomLink)}
                 >
-                  {/* ✅ translated Join Class + legacy font only */}
                   <Text style={[styles.joinBtnText, LBL_BOLD]}>{UI.join}</Text>
                 </Pressable>
               </View>

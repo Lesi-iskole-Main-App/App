@@ -8,7 +8,9 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { useGetLessonsByClassIdQuery } from "../app/lessonApi";
+import { useDispatch } from "react-redux";
+import { useGetRecordingsByClassIdQuery } from "../app/recordingApi";
+import { setSelectedRecordingLesson } from "../app/features/recordingSlice";
 
 const PRIMARY = "#1153ec";
 const TAB_BAR_SPACE = 110;
@@ -19,8 +21,9 @@ const cleanDisplayText = (value) => {
   return raw.replace(/\s+/g, " ").trim();
 };
 
-export default function Lessons({ route }) {
+export default function RecordingLessons({ route }) {
   const navigation = useNavigation();
+  const dispatch = useDispatch();
 
   const classId = route?.params?.classId || "";
   const className = route?.params?.className || "";
@@ -29,11 +32,11 @@ export default function Lessons({ route }) {
   const teacher = route?.params?.teacher || "";
 
   const {
-    data: lessons = [],
+    data: recordings = [],
     isLoading,
     isError,
     refetch,
-  } = useGetLessonsByClassIdQuery(classId, { skip: !classId });
+  } = useGetRecordingsByClassIdQuery(classId, { skip: !classId });
 
   const timeWithDot = (v) =>
     String(v || "")
@@ -41,92 +44,94 @@ export default function Lessons({ route }) {
       .replace(/[：:ඃ]/g, ".")
       .replace(/\s+/g, "");
 
-  const sortedLessons = useMemo(() => {
-    const toMs = (d) => {
-      const dt = new Date(String(d || "").trim());
+  const sortedRecordings = useMemo(() => {
+    const toMs = (dateValue, timeValue) => {
+      const dt = new Date(
+        `${String(dateValue || "").trim()} ${String(timeValue || "").trim()}`
+      );
       const ms = dt.getTime();
       return Number.isFinite(ms) ? ms : 0;
     };
 
-    return [...(lessons || [])].sort((a, b) => {
-      const da = toMs(a?.date);
-      const db = toMs(b?.date);
-      if (da !== db) return da - db;
-
-      const ta = timeWithDot(a?.time);
-      const tb = timeWithDot(b?.time);
-      return ta.localeCompare(tb);
+    return [...(recordings || [])].sort((a, b) => {
+      const da = toMs(a?.date, a?.time);
+      const db = toMs(b?.date, b?.time);
+      return da - db;
     });
-  }, [lessons]);
+  }, [recordings]);
 
-  const onWatchNow = (lesson, index) => {
-    navigation.navigate("ViewLesson", {
-      lessonId: lesson?._id,
-      lessonNo: index + 1,
-      title: lesson?.title || "",
-      date: lesson?.date || "",
-      time: lesson?.time || "",
-      description: lesson?.description || "",
-      youtubeUrl: lesson?.youtubeUrl || "",
+  const onOpenRecording = (recording, index) => {
+    const payload = {
+      recordingId: recording?._id,
+      recordingNo: index + 1,
+      title: recording?.title || "",
+      date: recording?.date || "",
+      time: recording?.time || "",
+      description: recording?.description || "",
+      recordingUrl: recording?.recordingUrl || "",
       classId,
       className,
       grade,
       subject,
       teacher,
-    });
+    };
+
+    dispatch(setSelectedRecordingLesson(payload));
+    navigation.navigate("RecordingViewLesson", payload);
   };
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <Text style={styles.pageTitle}>Lessons</Text>
+      <Text style={styles.pageTitle}>Recording Lessons</Text>
 
       {!classId ? (
         <Text style={styles.centerInfo}>Missing class</Text>
       ) : isLoading ? (
         <View style={styles.stateWrap}>
           <ActivityIndicator size="small" color={PRIMARY} />
-          <Text style={styles.infoText}>Loading lessons...</Text>
+          <Text style={styles.infoText}>Loading recordings...</Text>
         </View>
       ) : isError ? (
         <View style={styles.stateWrap}>
-          <Text style={styles.errTitle}>Failed to load lessons</Text>
+          <Text style={styles.errTitle}>Failed to load recordings</Text>
           <Pressable onPress={() => refetch?.()} style={styles.retryBtn}>
             <Text style={styles.tryAgain}>Try again</Text>
           </Pressable>
         </View>
-      ) : sortedLessons.length === 0 ? (
-        <Text style={styles.centerInfo}>No lessons available.</Text>
+      ) : sortedRecordings.length === 0 ? (
+        <Text style={styles.centerInfo}>No recordings available.</Text>
       ) : (
-        sortedLessons.map((lesson, idx) => {
-          const lessonTitle =
-            cleanDisplayText(lesson?.title) || `Lesson ${idx + 1}`;
-          const lessonDescription =
-            cleanDisplayText(lesson?.description) || "No description available.";
+        sortedRecordings.map((recording, idx) => {
+          const title =
+            cleanDisplayText(recording?.title) || `Recording ${idx + 1}`;
+          const description =
+            cleanDisplayText(recording?.description) ||
+            "No description available.";
 
           return (
-            <View style={styles.card} key={lesson?._id || String(idx)}>
+            <View style={styles.card} key={recording?._id || String(idx)}>
               <View style={styles.headerRow}>
                 <View style={styles.lessonBadge}>
-                  <Text style={styles.lessonBadgeText}>Lesson {idx + 1}</Text>
+                  <Text style={styles.lessonBadgeText}>Recording {idx + 1}</Text>
                 </View>
 
                 <View style={styles.metaWrap}>
                   <View style={styles.metaBox}>
                     <Text style={styles.metaLabel}>Date</Text>
-                    <Text style={styles.metaValue}>{lesson?.date || "-"}</Text>
+                    <Text style={styles.metaValue}>{recording?.date || "-"}</Text>
                   </View>
 
                   <View style={styles.metaBox}>
                     <Text style={styles.metaLabel}>Time</Text>
                     <Text style={styles.metaValue}>
-                      {timeWithDot(lesson?.time) || "-"}
+                      {timeWithDot(recording?.time) || "-"}
                     </Text>
                   </View>
                 </View>
               </View>
 
               <Text style={styles.lessonTitle} numberOfLines={2}>
-                {lessonTitle}
+                {title}
               </Text>
 
               <View style={styles.divider} />
@@ -134,7 +139,7 @@ export default function Lessons({ route }) {
               <View style={styles.descCard}>
                 <Text style={styles.descLabel}>Description</Text>
                 <Text style={styles.descText} numberOfLines={3}>
-                  {lessonDescription}
+                  {description}
                 </Text>
               </View>
 
@@ -144,9 +149,9 @@ export default function Lessons({ route }) {
                     styles.watchBtn,
                     pressed && styles.watchBtnPressed,
                   ]}
-                  onPress={() => onWatchNow(lesson, idx)}
+                  onPress={() => onOpenRecording(recording, idx)}
                 >
-                  <Text style={styles.watchText}>Watch Now</Text>
+                  <Text style={styles.watchText}>Watch Recording</Text>
                 </Pressable>
               </View>
             </View>
@@ -158,8 +163,16 @@ export default function Lessons({ route }) {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#F1F5F9" },
-  content: { paddingHorizontal: 14, paddingTop: 14, paddingBottom: TAB_BAR_SPACE },
+  screen: {
+    flex: 1,
+    backgroundColor: "#F1F5F9",
+  },
+
+  content: {
+    paddingHorizontal: 14,
+    paddingTop: 14,
+    paddingBottom: TAB_BAR_SPACE,
+  },
 
   pageTitle: {
     fontSize: 22,
@@ -169,24 +182,34 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
 
-  stateWrap: { paddingTop: 30, alignItems: "center" },
+  stateWrap: {
+    paddingTop: 30,
+    alignItems: "center",
+  },
+
   infoText: {
     marginTop: 10,
     color: "#64748B",
     fontWeight: "600",
     fontSize: 13,
   },
+
   errTitle: {
     color: "#0F172A",
     fontWeight: "700",
     fontSize: 14,
   },
-  retryBtn: { marginTop: 10 },
+
+  retryBtn: {
+    marginTop: 10,
+  },
+
   tryAgain: {
     color: PRIMARY,
     fontWeight: "700",
     fontSize: 13,
   },
+
   centerInfo: {
     textAlign: "center",
     marginTop: 24,
@@ -306,7 +329,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 10,
-    minWidth: 98,
+    minWidth: 130,
     alignItems: "center",
   },
 

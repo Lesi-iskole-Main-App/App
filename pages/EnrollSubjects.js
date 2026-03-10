@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
   ScrollView,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 
 import { useGetClassesByGradeAndSubjectQuery } from "../app/classApi";
 import {
@@ -36,6 +36,7 @@ export default function EnrollSubjects({ route }) {
   const gradeLabel = route?.params?.grade || "Grade 4";
   const gradeNumberParam = route?.params?.gradeNumber;
   const subjectName = route?.params?.subjectName || "";
+  const streamName = route?.params?.streamName || "";
 
   const gradeNo = useMemo(
     () => Number(gradeNumberParam) || numberFromGrade(gradeLabel),
@@ -48,8 +49,12 @@ export default function EnrollSubjects({ route }) {
     isError,
     refetch,
   } = useGetClassesByGradeAndSubjectQuery(
-    { gradeNumber: gradeNo, subjectName },
-    { skip: !gradeNo || !subjectName }
+    {
+      gradeNumber: gradeNo,
+      subjectName,
+      streamName,
+    },
+    { skip: !gradeNo }
   );
 
   const {
@@ -57,6 +62,14 @@ export default function EnrollSubjects({ route }) {
     isLoading: myReqLoading,
     refetch: refetchMyReq,
   } = useGetMyEnrollRequestsQuery();
+
+  // ✅ auto refresh when page is focused again
+  useFocusEffect(
+    useCallback(() => {
+      if (gradeNo) refetch?.();
+      refetchMyReq?.();
+    }, [gradeNo, refetch, refetchMyReq])
+  );
 
   const myReqMap = useMemo(() => {
     const map = {};
@@ -92,6 +105,7 @@ export default function EnrollSubjects({ route }) {
       setModalOpen(false);
       setSelectedClass(null);
       refetchMyReq?.();
+      refetch?.();
       alert("Request sent!");
     } catch (e) {
       alert(String(e?.data?.message || e?.error || "Request failed"));
@@ -103,7 +117,8 @@ export default function EnrollSubjects({ route }) {
       classId: cls._id,
       className: cls.className,
       grade: gradeLabel,
-      subject: subjectName,
+      subject: cls?.subjectName || subjectName || "",
+      teacher: "",
     });
   };
 
@@ -122,7 +137,13 @@ export default function EnrollSubjects({ route }) {
       ) : isError ? (
         <View style={styles.stateWrap}>
           <Text style={styles.errTitle}>Failed to load classes</Text>
-          <Pressable onPress={refetch} style={styles.retryWrap}>
+          <Pressable
+            onPress={() => {
+              refetch?.();
+              refetchMyReq?.();
+            }}
+            style={styles.retryWrap}
+          >
             <Text style={styles.tryAgain}>Try again</Text>
           </Pressable>
         </View>
@@ -138,10 +159,19 @@ export default function EnrollSubjects({ route }) {
             const req = myReqMap[String(c._id)];
             const status = req?.status || "";
 
+            const normalizedItem = {
+              ...c,
+              className: c?.className || "Class",
+              teacherName: "",
+              teacher: "",
+              image: c?.imageUrl || "",
+              imageUrl: c?.imageUrl || "",
+            };
+
             return (
               <ClassEnrollCard
                 key={c._id}
-                item={c}
+                item={normalizedItem}
                 index={index}
                 status={
                   status === "approved"
@@ -150,7 +180,13 @@ export default function EnrollSubjects({ route }) {
                     ? "pending"
                     : ""
                 }
-                onPressView={() => goLessons(c)}
+                onPressView={() => {
+                  if (status === "approved") {
+                    goLessons(c);
+                  } else {
+                    alert("Only approved enrolled classes can open lessons.");
+                  }
+                }}
                 onPressEnroll={() => openModal(c)}
               />
             );
@@ -160,7 +196,9 @@ export default function EnrollSubjects({ route }) {
             <View style={styles.emptyCard}>
               <Text style={styles.emptyTitle}>No classes available</Text>
               <Text style={styles.centerInfo}>
-                No classes available for this subject.
+                {streamName
+                  ? `No classes available for ${streamName}.`
+                  : "No classes available for this grade."}
               </Text>
             </View>
           )}
