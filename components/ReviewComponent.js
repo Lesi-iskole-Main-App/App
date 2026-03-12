@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React from "react";
 import {
   View,
   Text,
@@ -6,11 +6,12 @@ import {
   Dimensions,
   Platform,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
-import { useFonts } from "expo-font";
 
 import CrossWebView from "../components/CrossWebView";
 import YoutubePlayerBox from "../components/YoutubePlayerBox";
+import { useGetAllReviewsQuery } from "../app/reviewApi";
 
 const { width } = Dimensions.get("window");
 
@@ -26,39 +27,50 @@ function getYouTubeId(url = "") {
   const embedMatch = url.match(/youtube\.com\/embed\/([A-Za-z0-9_-]{6,})/);
   if (embedMatch?.[1]) return embedMatch[1];
 
+  const shortsMatch = url.match(/youtube\.com\/shorts\/([A-Za-z0-9_-]{6,})/);
+  if (shortsMatch?.[1]) return shortsMatch[1];
+
   return "";
 }
 
-export default function ReviewComponent({ route }) {
-  const [fontsLoaded] = useFonts({
-    FMEmanee: require("../assets/fonts/FMEmaneex.ttf"),
-  });
+export default function ReviewComponent() {
+  const {
+    data: reviews = [],
+    isLoading,
+    isFetching,
+    isError,
+    error,
+  } = useGetAllReviewsQuery();
 
-  // ✅ you can pass an array: route.params.reviews
-  // If not, it will use 3 demo cards
-  const reviews =
-    route?.params?.reviews ?? [
-      {
-        youtubeUrl: route?.params?.youtubeUrl ?? "https://youtu.be/yj0XRIJRuDY",
-        description:
-          route?.params?.description ??
-          `f,ais biafldaf,a  hkq orejkaf.a wOHdmkh myiq" kùk iy úYajdiodhl f,i f.khkak ks¾udKh l<  wOHdmk fhÿuls'`,
-      },
-      {
-        youtubeUrl: "https://youtu.be/8k7b7_-FiWU",
-        description: `fuu fhÿu YsIHhkag iy foudmshkag tlu fõÈldjla ;=<ska Wiia .=Kd;aul wOHdmk w;aoelSula ,nd§u wruqKq lr.ksñka ixj¾Okh lr we;'`,
-      },
-      {
-        youtubeUrl: "https://youtu.be/ETQA_J5Ebzw",
-        description: `wjia:dj ,ndfohs' fuu fhÿu foudmshkag ;u orejdf.a wOHdmk .uk úYajdifhka iy wdrlaIs;j ksÍlaIKh lsÍug WmldÍ jk w;r"`,
-      },
-    ];
-
-  const CARD_GAP = 12;
+  const CARD_GAP = 14;
   const CARD_W = Math.round(width * 0.88);
   const SIDE_PADDING = Math.round((width - CARD_W) / 2);
 
-  if (!fontsLoaded) return null;
+  if (isLoading || isFetching) {
+    return (
+      <View style={styles.loadingWrap}>
+        <ActivityIndicator size="small" color="#2563EB" />
+      </View>
+    );
+  }
+
+  if (isError) {
+    return (
+      <View style={styles.loadingWrap}>
+        <Text style={styles.errorText}>
+          {error?.data?.message || error?.error || "Failed to load reviews"}
+        </Text>
+      </View>
+    );
+  }
+
+  if (!reviews || !reviews.length) {
+    return (
+      <View style={styles.loadingWrap}>
+        <Text style={styles.emptyText}>No reviews found</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.wrapper}>
@@ -72,7 +84,7 @@ export default function ReviewComponent({ route }) {
       >
         {reviews.map((item, index) => {
           const videoId = getYouTubeId(item.youtubeUrl);
-          const playerHeight = Math.round((CARD_W - 28) * 0.56); // based on card padding
+          const playerHeight = Math.round((CARD_W - 32) * 0.56);
 
           const playerHtml = (() => {
             if (!videoId) return "";
@@ -87,8 +99,21 @@ export default function ReviewComponent({ route }) {
                 <head>
                   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
                   <style>
-                    html, body { margin:0; padding:0; width:100%; height:100%; background:#0B1220; overflow:hidden; }
-                    iframe { width:100%; height:100%; border:0; display:block; background:#0B1220; }
+                    html, body {
+                      margin:0;
+                      padding:0;
+                      width:100%;
+                      height:100%;
+                      background:#0B1220;
+                      overflow:hidden;
+                    }
+                    iframe {
+                      width:100%;
+                      height:100%;
+                      border:0;
+                      display:block;
+                      background:#0B1220;
+                    }
                   </style>
                 </head>
                 <body>
@@ -104,19 +129,31 @@ export default function ReviewComponent({ route }) {
 
           return (
             <View
-              key={`review-${index}`}
+              key={item._id || `review-${index}`}
               style={[
                 styles.card,
-                { width: CARD_W, marginRight: index === reviews.length - 1 ? 0 : CARD_GAP },
+                {
+                  width: CARD_W,
+                  marginRight: index === reviews.length - 1 ? 0 : CARD_GAP,
+                },
               ]}
             >
+              {!!item.title && (
+                <Text style={styles.title} numberOfLines={2}>
+                  {item.title}
+                </Text>
+              )}
+
               <View style={[styles.playerBox, { height: playerHeight }]}>
                 {!videoId ? (
                   <View style={styles.playerFallback}>
                     <Text style={styles.fallbackText}>Invalid YouTube link</Text>
                   </View>
                 ) : Platform.OS === "web" ? (
-                  <CrossWebView source={{ html: playerHtml }} style={styles.webview} />
+                  <CrossWebView
+                    source={{ html: playerHtml }}
+                    style={styles.webview}
+                  />
                 ) : (
                   <YoutubePlayerBox videoId={videoId} height={playerHeight} />
                 )}
@@ -138,31 +175,76 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
 
+  loadingWrap: {
+    width: "100%",
+    paddingVertical: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  errorText: {
+    color: "#DC2626",
+    fontSize: 14,
+    fontFamily: "AbhayaLibre_400Regular",
+  },
+
+  emptyText: {
+    color: "#475569",
+    fontSize: 14,
+    fontFamily: "AbhayaLibre_400Regular",
+  },
+
   card: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 18,
-    padding: 14,
+    borderRadius: 22,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
 
-   
+  title: {
+    fontSize: 20,
+    color: "#0F172A",
+    lineHeight: 26,
+    marginBottom: 14,
+    textAlign: "center",
+    fontFamily: "AbhayaLibre_700Bold",
   },
 
   playerBox: {
     width: "100%",
-    borderRadius: 14,
+    borderRadius: 16,
     overflow: "hidden",
     backgroundColor: "#0B1220",
-    marginBottom: 12,
+    marginBottom: 14,
   },
 
-  webview: { width: "100%", height: "100%", backgroundColor: "transparent" },
+  webview: {
+    width: "100%",
+    height: "100%",
+    backgroundColor: "transparent",
+  },
 
-  playerFallback: { flex: 1, alignItems: "center", justifyContent: "center" },
-  fallbackText: { color: "#FFFFFF", fontWeight: "800" },
+  playerFallback: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  fallbackText: {
+    color: "#FFFFFF",
+    fontWeight: "800",
+  },
 
   desc: {
-    fontSize: 14,
+    fontSize: 15,
     color: "#334155",
-    lineHeight: 22,
-    fontFamily: "FMEmanee",
+    lineHeight: 24,
+    textAlign: "left",
+    fontFamily: "AbhayaLibre_400Regular",
   },
 });

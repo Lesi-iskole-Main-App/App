@@ -15,9 +15,6 @@ export const paperApi = createApi({
     credentials: "include",
   }),
   endpoints: (builder) => ({
-    // ✅ Student: get published papers by grade+subject (+stream for AL)
-    // paperType examples:
-    // "Daily Quiz" | "Topic wise paper" | "Model paper" | "Past paper"
     getPublishedPapers: builder.query({
       query: ({ gradeNumber, paperType, stream, subject }) => {
         const params = new URLSearchParams();

@@ -165,11 +165,7 @@ export default function RecordingClasses() {
                         {className}
                       </Text>
 
-                      <View style={styles.gradePill}>
-                        <Text style={styles.gradeText}>
-                          Grade {String(item?.grade || "-")}
-                        </Text>
-                      </View>
+                     
                     </View>
                   </View>
                 </View>

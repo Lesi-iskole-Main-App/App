@@ -86,7 +86,6 @@ const makeSafeDate = (y, m, d) => {
   if (!yy || !mm || !dd) return null;
   const dt = new Date(yy, mm - 1, dd);
   if (Number.isNaN(dt.getTime())) return null;
-  // validate exact match (avoid overflow like Feb 31 -> Mar 2)
   if (
     dt.getFullYear() !== yy ||
     dt.getMonth() !== mm - 1 ||
@@ -115,26 +114,21 @@ export default function Sign({ navigation, route }) {
   const isSignUp = mode === "signup";
 
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
   const [phone, setPhone] = useState(route?.params?.phone || "");
   const [district, setDistrict] = useState("");
   const [town, setTown] = useState("");
   const [address, setAddress] = useState("");
   const [birthday, setBirthday] = useState(null);
   const [passwordUp, setPasswordUp] = useState("");
+  const [confirmPasswordUp, setConfirmPasswordUp] = useState("");
 
   const [phoneIn, setPhoneIn] = useState(route?.params?.phone || "");
   const [passwordIn, setPasswordIn] = useState("");
 
   const [districtModal, setDistrictModal] = useState(false);
-
-  // ✅ mobile picker visible (ios/android)
   const [birthdayPickerVisible, setBirthdayPickerVisible] = useState(false);
-
-  // ✅ web modal picker visible
   const [birthdayWebModal, setBirthdayWebModal] = useState(false);
 
-  // ✅ web temp values
   const [webY, setWebY] = useState("");
   const [webM, setWebM] = useState("");
   const [webD, setWebD] = useState("");
@@ -190,23 +184,24 @@ export default function Sign({ navigation, route }) {
 
   const validateSignup = () => {
     const n = name.trim();
-    const em = email.trim();
     const ph = phone.trim();
     const dis = district.trim();
     const tw = town.trim();
     const ad = address.trim();
     const bd = formatBirthday(birthday);
     const pw = String(passwordUp || "");
+    const cpw = String(confirmPasswordUp || "");
 
     if (!n) return "Please enter your name";
-    if (!em) return "Please enter your email";
     if (!ph) return "Please enter your phone number";
     if (!dis) return "Please select your district";
     if (!tw) return "Please enter your town";
     if (!ad) return "Please enter your address";
     if (!bd) return "Please select your birthday";
     if (!pw) return "Please enter your password";
+    if (!cpw) return "Please enter confirm password";
     if (pw.length < 6) return "Password must be at least 6 characters";
+    if (pw !== cpw) return "Password and confirm password do not match";
     return null;
   };
 
@@ -224,7 +219,6 @@ export default function Sign({ navigation, route }) {
 
         const payload = {
           name: name.trim(),
-          email: email.trim(),
           whatsappnumber: phone.trim(),
           password: passwordUp,
           role: "student",
@@ -241,11 +235,10 @@ export default function Sign({ navigation, route }) {
         dispatch(
           setPendingIdentity({
             phone: payload.whatsappnumber,
-            email: payload.email,
           })
         );
 
-        Alert.alert("OTP Sent", "We sent OTP to your WhatsApp + Email.");
+        Alert.alert("OTP Sent", "We sent OTP to your WhatsApp and SMS.");
 
         navigation.navigate("OTP", {
           phone: payload.whatsappnumber,
@@ -290,7 +283,6 @@ export default function Sign({ navigation, route }) {
   };
 
   const openBirthdayPicker = () => {
-    // ✅ web uses modal picker
     if (Platform.OS === "web") {
       const now = birthday || new Date(2005, 0, 1);
       setWebY(String(now.getFullYear()));
@@ -300,7 +292,6 @@ export default function Sign({ navigation, route }) {
       return;
     }
 
-    // ✅ ios/android keep your existing picker
     setBirthdayPickerVisible(true);
   };
 
@@ -374,9 +365,7 @@ export default function Sign({ navigation, route }) {
                   setBirthdayWebModal(false);
                 }}
               >
-                <Text style={[styles.webBtnText, sinFont("bold")]}>
-                  OK
-                </Text>
+                <Text style={[styles.webBtnText, sinFont("bold")]}>OK</Text>
               </Pressable>
             </View>
           </Pressable>
@@ -531,14 +520,7 @@ export default function Sign({ navigation, route }) {
             value={name}
             onChangeText={setName}
           />
-          <Field
-            placeholder={t("email")}
-            placeholderFont={sinFont()}
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
+
           <Field
             placeholder={t("phoneNumber")}
             placeholderFont={sinFont()}
@@ -577,7 +559,6 @@ export default function Sign({ navigation, route }) {
             style={{ minHeight: 90, textAlignVertical: "top", paddingTop: 12 }}
           />
 
-          {/* ✅ works on iOS/Android (DateTimePicker) + Web (modal picker) */}
           <Pressable
             onPress={openBirthdayPicker}
             style={[styles.input, { justifyContent: "center" }]}
@@ -595,7 +576,6 @@ export default function Sign({ navigation, route }) {
             </Text>
           </Pressable>
 
-          {/* ✅ iOS/Android only */}
           {birthdayPickerVisible && Platform.OS !== "web" && (
             <DateTimePicker
               value={birthday || new Date(2005, 0, 1)}
@@ -611,6 +591,14 @@ export default function Sign({ navigation, route }) {
             placeholderFont={sinFont()}
             value={passwordUp}
             onChangeText={setPasswordUp}
+            secureTextEntry
+          />
+
+          <Field
+            placeholder={t("confirmPassword") || "Confirm Password"}
+            placeholderFont={sinFont()}
+            value={confirmPasswordUp}
+            onChangeText={setConfirmPasswordUp}
             secureTextEntry
           />
 
@@ -828,7 +816,6 @@ const styles = StyleSheet.create({
     color: "#214294",
   },
 
-  // ✅ WEB birthday picker styles
   webPickerRow: {
     flexDirection: "row",
     gap: 10,

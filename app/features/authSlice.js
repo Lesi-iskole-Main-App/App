@@ -3,14 +3,11 @@ import { createSlice } from "@reduxjs/toolkit";
 const initialState = {
   token: null,
 
-  // used for OTP + prefill signin phone
   pendingPhone: "",
-  pendingEmail: "",
 
-  // grade selection chosen before signin
-  selectedLevel: null,     // "primary" | "secondary" | "al"
-  selectedGrade: null,     // "Grade 3"
-  selectedStream: null,    // "Maths" etc
+  selectedLevel: null,
+  selectedGrade: null,
+  selectedStream: null,
 
   signupDistrict: "",
 };
@@ -25,16 +22,14 @@ const authSlice = createSlice({
     clearAuth: (state) => {
       state.token = null;
       state.pendingPhone = "";
-      state.pendingEmail = "";
       state.selectedLevel = null;
       state.selectedGrade = null;
       state.selectedStream = null;
       state.signupDistrict = "";
     },
     setPendingIdentity: (state, action) => {
-      const { phone, email } = action.payload || {};
+      const { phone } = action.payload || {};
       state.pendingPhone = phone || "";
-      state.pendingEmail = email || "";
     },
     setGradeSelection: (state, action) => {
       const { level, grade, stream } = action.payload || {};

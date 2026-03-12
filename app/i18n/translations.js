@@ -33,7 +33,7 @@ export const translations = {
     navHome: "uq,a msgqj",
     navLive: "iÔj",
     navResult: "m%;sM,",
-    navEnroll: ",shdmÈxÑ",
+    navEnroll: "frfldaâka",
     navLms: "mdvï",
 
     // Useful learning labels
@@ -269,7 +269,7 @@ enrollNow: ",shdmÈxÑ fjkak",
     navHome: "Home",
     navLive: "Live",
     navResult: "Results",
-    navEnroll: "Enroll",
+    navEnroll: "Recordings",
     navLms: "LMS",
    tapViewFullScreen: "Tap the View button to see it in full screen.",
     // Useful learning labels

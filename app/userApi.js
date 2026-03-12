@@ -1,4 +1,3 @@
-// app/userApi.js
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { BASE_URL } from "./api/api";
 
@@ -8,21 +7,38 @@ export const userApi = createApi({
     baseUrl: `${BASE_URL}/api/user`,
     prepareHeaders: (headers, { getState }) => {
       const token = getState()?.auth?.token;
-      if (token) headers.set("Authorization", `Bearer ${token}`);
+
+      if (token) {
+        headers.set("Authorization", `Bearer ${token}`);
+      }
+
       headers.set("Content-Type", "application/json");
       return headers;
     },
     credentials: "include",
   }),
+  tagTypes: ["MyProfile"],
   endpoints: (builder) => ({
+    getMyProfile: builder.query({
+      query: () => ({
+        url: "/me",
+        method: "GET",
+      }),
+      providesTags: ["MyProfile"],
+    }),
+
     saveStudentGradeSelection: builder.mutation({
       query: (body) => ({
         url: "/student/grade-selection",
         method: "PATCH",
         body,
       }),
+      invalidatesTags: ["MyProfile"],
     }),
   }),
 });
 
-export const { useSaveStudentGradeSelectionMutation } = userApi;
+export const {
+  useGetMyProfileQuery,
+  useSaveStudentGradeSelectionMutation,
+} = userApi;

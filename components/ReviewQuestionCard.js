@@ -5,7 +5,7 @@ import useT from "../app/i18n/useT";
 
 const TEXT_DARK = "#0F172A";
 const MUTED = "#64748B";
-const BORDER = "#E2E8F0";
+const BORDER = "#E2E2E8";
 
 const RED = "#E11D48";
 const GREEN = "#16A34A";
@@ -58,7 +58,6 @@ export default function ReviewQuestionCard({
   return (
     <View style={styles.card}>
       <View style={styles.headRow}>
-        {/* ✅ Sinhala font ONLY for label, not ":" */}
         <Text style={styles.qNo}>
           <Text style={isSi ? sinFont("bold") : null}>{T.question}</Text>
           {" : "}
@@ -77,7 +76,7 @@ export default function ReviewQuestionCard({
         </View>
       </View>
 
-      <Text style={styles.qText} numberOfLines={2}>
+      <Text style={styles.qText}>
         {item?.question}
       </Text>
 
@@ -104,7 +103,6 @@ export default function ReviewQuestionCard({
                 styles.fetchText,
                 !isCorrect && { color: RED },
               ]}
-              numberOfLines={2}
             >
               {userAnswer || "-"}
             </Text>
@@ -117,19 +115,16 @@ export default function ReviewQuestionCard({
               </Text>
               <Text
                 style={[styles.lineValue, styles.fetchText, { color: GREEN }]}
-                numberOfLines={2}
               >
                 {correctAnswers[0] || "-"}
               </Text>
             </View>
           ) : (
             <View style={styles.answerRow}>
-              {/* ✅ Correct Answers label must be GREEN + BOLD */}
               <Text style={correctAnswersLabelStyle}>{T.correctAnswers}</Text>
 
               <Text
                 style={[styles.lineValue, styles.fetchText, { color: GREEN }]}
-                numberOfLines={3}
               >
                 {correctAnswers.join(", ")}
               </Text>
@@ -176,12 +171,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    gap: 8,
   },
 
   qNo: {
     fontSize: 10,
     fontWeight: "900",
     color: MUTED,
+    flexShrink: 1,
   },
 
   badge: {
@@ -191,6 +188,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 999,
+    flexShrink: 0,
   },
 
   badgeGreen: { backgroundColor: GREEN },
@@ -206,8 +204,9 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontSize: 12,
     color: TEXT_DARK,
-    lineHeight: 18,
+    lineHeight: 20,
     fontFamily: "NotoSerifSinhala_700Bold",
+    flexWrap: "wrap",
   },
 
   revealBtn: {
@@ -257,7 +256,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 
-  // ✅ GREEN label for "Correct Answers"
   lineLabelGreen: {
     color: GREEN,
     fontWeight: "900",
@@ -265,7 +263,8 @@ const styles = StyleSheet.create({
 
   lineValue: {
     fontSize: 11,
-    lineHeight: 16,
+    lineHeight: 18,
+    flexWrap: "wrap",
   },
 
   fetchText: {

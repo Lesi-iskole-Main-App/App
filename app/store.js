@@ -6,6 +6,7 @@ import gradeReducer from "./features/gradeSlice";
 import lessonReducer from "./features/lessonSlice";
 import enrollReducer from "./features/enrollSlice";
 import recordingReducer from "./features/recordingSlice";
+import reviewReducer from "./features/reviewSlice";
 
 import liveUiReducer from "./features/liveSlice";
 import paperReducer from "./features/paperSlice";
@@ -29,6 +30,7 @@ import { lessonApi } from "./lessonApi";
 import { paymentApi } from "./paymentApi";
 import { languageApi } from "./languageApi";
 import { recordingApi } from "./recordingApi";
+import { reviewApi } from "./reviewApi";
 
 const store = configureStore({
   reducer: {
@@ -38,6 +40,7 @@ const store = configureStore({
     lesson: lessonReducer,
     enroll: enrollReducer,
     recording: recordingReducer,
+    review: reviewReducer,
 
     liveUi: liveUiReducer,
     paper: paperReducer,
@@ -59,6 +62,7 @@ const store = configureStore({
     [languageApi.reducerPath]: languageApi.reducer,
     [progressApi.reducerPath]: progressApi.reducer,
     [recordingApi.reducerPath]: recordingApi.reducer,
+    [reviewApi.reducerPath]: reviewApi.reducer,
   },
 
   middleware: (getDefaultMiddleware) =>
@@ -76,7 +80,8 @@ const store = configureStore({
       rankApi.middleware,
       languageApi.middleware,
       progressApi.middleware,
-      recordingApi.middleware
+      recordingApi.middleware,
+      reviewApi.middleware
     ),
 });
 

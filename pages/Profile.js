@@ -14,6 +14,7 @@ import { useSelector } from "react-redux";
 
 import profile from "../assets/profile.png";
 import useT from "../app/i18n/useT";
+import ReviewComponent from "../components/ReviewComponent";
 
 // ✅ match your BottomNavigation height
 const TAB_BAR_HEIGHT = 90;
@@ -135,7 +136,7 @@ export default function Profile({ route }) {
             </View>
 
 
-            {/* ✅ ReviewComponent removed */}
+            <ReviewComponent/>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

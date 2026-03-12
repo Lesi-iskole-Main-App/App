@@ -1,5 +1,6 @@
 // pages/DailyQuizMenu.js ✅ FULL FILE
-// logic aligned with other menu pages + keeps paid paper support + bottom spacing fixed
+// one day only one paper shown for current grade/subject(/stream)
+// same UI kept, only logic changed
 
 import React, { useMemo, useCallback, useState } from "react";
 import {
@@ -34,10 +35,7 @@ const PaymentBadge = ({ payment, amount, T, isSi, sinFont }) => {
   const bg = isPaid ? "#FEE2E2" : isPractice ? "#FEF3C7" : "#DCFCE7";
   const text = isPaid ? "#991B1B" : isPractice ? "#92400E" : "#166534";
 
-  // ✅ Paid label must stay English (do NOT translate "PAID" or "Rs")
   const paidLabel = `Pay • Rs ${Number(amount || 0)}`;
-
-  // ✅ Only translate these 3 words: T.practise / T.free (Paid stays English)
   const label = isPaid ? paidLabel : isPractice ? T.practise : T.free;
 
   return (
@@ -46,7 +44,6 @@ const PaymentBadge = ({ payment, amount, T, isSi, sinFont }) => {
         style={[
           styles.badgeText,
           { color: text },
-          // ✅ Apply Sinhala font ONLY for practise/free (not for paidLabel)
           !isPaid && isSi ? sinFont("bold") : null,
         ]}
       >
@@ -76,7 +73,6 @@ const PaperCard = ({
   const isOver = attemptsLeft <= 0;
 
   const showPayNow = isPaidPaper && !unlocked;
-
   const btnText = showPayNow ? T.payNow : isOver ? T.viewResult : T.attemptNow;
 
   const onPress = () => {
@@ -228,6 +224,26 @@ const PaperCardWithStatus = ({
   );
 };
 
+function getSriLankaDayIndex() {
+  const now = new Date();
+  const slDateText = now.toLocaleDateString("en-CA", {
+    timeZone: "Asia/Colombo",
+  }); // YYYY-MM-DD
+
+  const [y, m, d] = String(slDateText).split("-").map(Number);
+
+  const utcMidnight = Date.UTC(y, m - 1, d);
+  return Math.floor(utcMidnight / 86400000);
+}
+
+function pickTodayPaper(papers) {
+  if (!Array.isArray(papers) || !papers.length) return [];
+
+  const dayIndex = getSriLankaDayIndex();
+  const selectedIndex = ((dayIndex % papers.length) + papers.length) % papers.length;
+  return [papers[selectedIndex]];
+}
+
 export default function DailyQuizMenu({ route }) {
   const navigation = useNavigation();
   const { t, lang, sinFont } = useT();
@@ -274,7 +290,7 @@ export default function DailyQuizMenu({ route }) {
     );
 
   const PAPERS = useMemo(() => {
-    return (Array.isArray(papersRaw) ? papersRaw : []).map((p) => ({
+    const mapped = (Array.isArray(papersRaw) ? papersRaw : []).map((p) => ({
       id: String(p?._id || ""),
       title: String(p?.paperTitle || "Daily Quiz"),
       mcqCount: Number(p?.questionCount || 0),
@@ -282,7 +298,11 @@ export default function DailyQuizMenu({ route }) {
       attempts: Number(p?.attempts || 1),
       payment: p?.payment,
       amount: Number(p?.amount || 0),
+      createdAt: p?.createdAt || null,
+      publishedAt: p?.publishedAt || null,
     }));
+
+    return pickTodayPaper(mapped);
   }, [papersRaw]);
 
   const [startAttempt, { isLoading: starting }] = useStartAttemptMutation();
@@ -361,7 +381,7 @@ export default function DailyQuizMenu({ route }) {
         </View>
       ) : (
         <ScrollView
-          contentContainerStyle={styles.list}
+          contentContainerStyle={styles.singleList}
           showsVerticalScrollIndicator={false}
         >
           {PAPERS.map((p) => (
@@ -401,7 +421,11 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
 
-  list: { paddingBottom: TAB_BAR_SPACE, gap: 12 },
+  singleList: {
+    flexGrow: 1,
+    paddingBottom: TAB_BAR_SPACE,
+    justifyContent: "center",
+  },
 
   card: {
     position: "relative",

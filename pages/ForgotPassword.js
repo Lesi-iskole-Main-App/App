@@ -18,7 +18,8 @@ import {
   useSigninMutation,
 } from "../app/authApi";
 import { useDispatch } from "react-redux";
-import { setAuth } from "../app/features/authSlice";
+import { setToken } from "../app/features/authSlice";
+import { setUser } from "../app/features/userSlice";
 
 import useT from "../app/i18n/useT";
 
@@ -31,7 +32,7 @@ export default function ForgotPassword({ navigation, route }) {
   const { t, sinFont } = useT();
 
   const step = route?.params?.step || "send";
-  const identifierFromOtp = route?.params?.identifier || "";
+  const identifierFromOtp = route?.params?.identifier || route?.params?.phone || "";
   const codeFromOtp = route?.params?.code || "";
 
   const [identifier, setIdentifier] = useState(identifierFromOtp || "");
@@ -52,9 +53,10 @@ export default function ForgotPassword({ navigation, route }) {
 
   const onSendOtp = async () => {
     try {
-      const id = identifier.trim();
+      const id = String(identifier || "").trim();
+
       if (!id) {
-        Alert.alert("Forgot Password", "Please enter your phone number or email");
+        Alert.alert("Forgot Password", "Please enter your phone number");
         return;
       }
 
@@ -62,7 +64,7 @@ export default function ForgotPassword({ navigation, route }) {
 
       await forgotSendOtp({ identifier: id }).unwrap();
 
-      Alert.alert("OTP Sent", "We sent OTP to your WhatsApp + Email.");
+      Alert.alert("OTP Sent", "We sent OTP to your WhatsApp and SMS.");
 
       navigation.navigate("OTP", {
         phone: id,
@@ -78,13 +80,14 @@ export default function ForgotPassword({ navigation, route }) {
 
   const onReset = async () => {
     try {
-      const id = identifier.trim();
+      const id = String(identifier || "").trim();
       const code = String(codeFromOtp || "").trim();
 
       if (!id) {
-        Alert.alert("Reset Password", "Missing phone number or email");
+        Alert.alert("Reset Password", "Missing phone number");
         return;
       }
+
       if (!code || code.length !== 6) {
         Alert.alert("Reset Password", "OTP is missing or invalid");
         navigation.replace("OTP", { phone: id, flow: "forgot" });
@@ -96,6 +99,11 @@ export default function ForgotPassword({ navigation, route }) {
         return;
       }
 
+      if (String(newPassword).length < 6) {
+        Alert.alert("Reset Password", "Password must be at least 6 characters");
+        return;
+      }
+
       if (String(newPassword) !== String(confirmPassword)) {
         Alert.alert("Reset Password", "Passwords do not match");
         return;
@@ -103,31 +111,30 @@ export default function ForgotPassword({ navigation, route }) {
 
       setLoading(true);
 
-      await forgotReset({
+      const resetRes = await forgotReset({
         identifier: id,
         code,
         newPassword,
         confirmPassword,
       }).unwrap();
 
-      if (!String(id).includes("@")) {
-        const loginRes = await signin({
-          whatsappnumber: id,
-          password: newPassword,
-        }).unwrap();
-
-        dispatch(
-          setAuth({
-            user: loginRes?.user || null,
-            token: loginRes?.token || null,
-          })
-        );
+      if (resetRes?.token && resetRes?.user) {
+        dispatch(setToken(resetRes.token));
+        dispatch(setUser(resetRes.user));
         navigation.replace("Home");
         return;
       }
 
-      Alert.alert("Success", "Password reset successful. Please sign in.");
-      navigation.replace("Sign", { mode: "signin", phone: "" });
+      const loginRes = await signin({
+        whatsappnumber: id,
+        password: newPassword,
+      }).unwrap();
+
+      dispatch(setToken(loginRes?.token || null));
+      dispatch(setUser(loginRes?.user || null));
+
+      Alert.alert("Success", "Password reset successful");
+      navigation.replace("Home");
     } catch (e) {
       const msg = e?.data?.message || e?.message || "Failed to reset password";
       Alert.alert("Error", msg);
@@ -143,33 +150,37 @@ export default function ForgotPassword({ navigation, route }) {
     >
       <View style={styles.container}>
         <Text style={[styles.title, sinFont("bold")]}>
-          {isResetStep ? t("resetPasswordTitle") : t("forgotPasswordTitle")}
+          {isResetStep
+            ? t("resetPasswordTitle") || "Reset Password"
+            : t("forgotPasswordTitle") || "Forgot Password"}
         </Text>
 
         <Text style={[styles.subTitle, sinFont()]}>
-          {isResetStep ? t("fpResetSubtitle") : t("fpSendSubtitle")}
+          {isResetStep
+            ? t("fpResetSubtitle") || "Enter your new password"
+            : t("fpSendSubtitle") || "Enter your phone number to receive OTP"}
         </Text>
 
         <Field
-          placeholder={t("fpPlaceholderIdentifier")}
+          placeholder={t("phoneNumber") || "Phone Number"}
           placeholderFont={sinFont()}
           value={identifier}
           onChangeText={setIdentifier}
-          autoCapitalize="none"
           editable={!isResetStep}
+          keyboardType="phone-pad"
         />
 
         {isResetStep && (
           <>
             <Field
-              placeholder={t("fpPlaceholderNewPassword")}
+              placeholder={t("fpPlaceholderNewPassword") || "New Password"}
               placeholderFont={sinFont()}
               value={newPassword}
               onChangeText={setNewPassword}
               secureTextEntry
             />
             <Field
-              placeholder={t("fpPlaceholderConfirmPassword")}
+              placeholder={t("fpPlaceholderConfirmPassword") || "Confirm Password"}
               placeholderFont={sinFont()}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
@@ -199,27 +210,33 @@ export default function ForgotPassword({ navigation, route }) {
               <ActivityIndicator color="#fff" />
             ) : (
               <Text style={[styles.gradientBtnText, sinFont("bold")]}>
-                {isResetStep ? t("resetPasswordTitle") : t("fpSendOtpBtn")}
+                {isResetStep
+                  ? t("resetPasswordTitle") || "Reset Password"
+                  : t("fpSendOtpBtn") || "Send OTP"}
               </Text>
             )}
           </LinearGradient>
         </Pressable>
 
         <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Text style={[styles.backText, sinFont("bold")]}>{t("back")}</Text>
+          <Text style={[styles.backText, sinFont("bold")]}>
+            {t("back") || "Back"}
+          </Text>
         </Pressable>
 
         {isResetStep && (
           <Pressable
             onPress={() =>
               navigation.replace("OTP", {
-                phone: identifier.trim(),
+                phone: String(identifier || "").trim(),
                 flow: "forgot",
               })
             }
             style={{ marginTop: 10 }}
           >
-           
+            <Text style={[styles.backText, sinFont("bold")]}>
+              {t("fpSendOtpBtn") || "Send OTP Again"}
+            </Text>
           </Pressable>
         )}
       </View>
@@ -235,6 +252,7 @@ function Field({
   secureTextEntry,
   autoCapitalize,
   editable = true,
+  keyboardType,
 }) {
   const empty = !String(value || "").length;
 
@@ -258,6 +276,7 @@ function Field({
         secureTextEntry={secureTextEntry}
         autoCapitalize={autoCapitalize}
         editable={editable}
+        keyboardType={keyboardType}
         allowFontScaling={false}
         underlineColorAndroid="transparent"
         style={[styles.input, styles.realInputLayer]}
