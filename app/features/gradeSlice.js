@@ -2,7 +2,7 @@ import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
   grades: [],
-  streamsByGrade: {}, // { 12: [...], 13: [...] }
+  streamsByGrade: {},
 };
 
 const gradeSlice = createSlice({
@@ -12,14 +12,23 @@ const gradeSlice = createSlice({
     setGrades: (state, action) => {
       state.grades = Array.isArray(action.payload) ? action.payload : [];
     },
+
     setStreamsForGrade: (state, action) => {
       const { gradeNumber, streams } = action.payload || {};
-      if (!gradeNumber) return;
-      state.streamsByGrade[Number(gradeNumber)] = Array.isArray(streams) ? streams : [];
+      if (gradeNumber == null) return;
+      state.streamsByGrade[String(gradeNumber)] = Array.isArray(streams)
+        ? streams
+        : [];
     },
-    clearGradeStore: () => initialState,
+
+    clearGradeState: (state) => {
+      state.grades = [];
+      state.streamsByGrade = {};
+    },
   },
 });
 
-export const { setGrades, setStreamsForGrade, clearGradeStore } = gradeSlice.actions;
+export const { setGrades, setStreamsForGrade, clearGradeState } =
+  gradeSlice.actions;
+
 export default gradeSlice.reducer;

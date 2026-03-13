@@ -21,11 +21,20 @@ import olstudents from "../assets/olstudents.png";
 import primarylevel from "../assets/primarylevel.png";
 
 import { useDispatch, useSelector } from "react-redux";
-import { setGradeSelection, clearGradeSelection } from "../app/features/authSlice";
+import {
+  setGradeSelection,
+  clearGradeSelection,
+} from "../app/features/authSlice";
 import { setUser, updateUserFields } from "../app/features/userSlice";
 
-import { useGetGradesQuery, useGetStreamsByGradeNumberQuery } from "../app/gradeApi";
-import { setGrades, setStreamsForGrade } from "../app/features/gradeSlice";
+import {
+  useGetGradesQuery,
+  useGetStreamsByGradeNumberQuery,
+} from "../app/gradeApi";
+import {
+  setGrades,
+  setStreamsForGrade,
+} from "../app/features/gradeSlice";
 
 import { useSaveStudentGradeSelectionMutation } from "../app/userApi";
 
@@ -44,40 +53,41 @@ const getGradeLabel = (g) => {
 };
 
 const getStreamLabel = (s) => {
-  return s?.stream || s?.name || s?.title || s?.label || "—";
+  return s?.label || s?.stream || s?.name || s?.title || "—";
 };
 
-const parseGradeNumber = (label) => {
-  const m = String(label || "").match(/(\d{1,2})/);
-  return m ? Number(m[1]) : null;
+const chooseALGradeNumber = (streamObj) => {
+  const gradeNumbers = Array.isArray(streamObj?.gradeNumbers)
+    ? [...streamObj.gradeNumbers].sort((a, b) => a - b)
+    : [];
+
+  if (gradeNumbers.includes(12)) return 12;
+  if (gradeNumbers.length) return gradeNumbers[0];
+  return 12;
 };
 
 export default function MainSelectgrade({ navigation }) {
   const dispatch = useDispatch();
 
-  // ✅ redux
   const pendingPhone = useSelector((s) => s?.auth?.pendingPhone);
   const streamsByGrade = useSelector((s) => s?.grade?.streamsByGrade || {});
-
   const token = useSelector((s) => s?.auth?.token);
-  const user = useSelector((s) => s?.user?.user) || useSelector((s) => s?.auth?.user);
+  const user =
+    useSelector((s) => s?.user?.user) || useSelector((s) => s?.auth?.user);
 
   const [saveGradeSelection] = useSaveStudentGradeSelectionMutation();
 
-  // ✅ fonts
   const [fontsLoaded] = useAlexandria({
     Alexandria_400Regular,
     Alexandria_700Bold,
   });
 
-  // ✅ local states
   const [gradeModalOpen, setGradeModalOpen] = useState(false);
-  const [modalType, setModalType] = useState(null); // "primary" | "secondary" | "al"
+  const [modalType, setModalType] = useState(null); // "primary" | "secondary"
 
   const [streamModalOpen, setStreamModalOpen] = useState(false);
-  const [selectedALGradeNum, setSelectedALGradeNum] = useState(null); // 12 or 13
+  const [selectedALMode, setSelectedALMode] = useState(false);
 
-  // ✅ backend: grades
   const {
     data: gradesRaw,
     isLoading: gradesLoading,
@@ -85,64 +95,75 @@ export default function MainSelectgrade({ navigation }) {
     refetch: refetchGrades,
   } = useGetGradesQuery();
 
-  // ✅ backend: streams (only when grade 12/13 picked)
   const {
     data: streamsRaw,
     isLoading: streamsLoading,
     isError: streamsError,
     refetch: refetchStreams,
-  } = useGetStreamsByGradeNumberQuery(selectedALGradeNum, {
-    skip: !selectedALGradeNum,
+  } = useGetStreamsByGradeNumberQuery(selectedALMode ? "al" : null, {
+    skip: !selectedALMode,
   });
 
-  // ✅ normalize grades array (supports both array and {grades:[]})
   const grades = useMemo(() => {
     if (Array.isArray(gradesRaw)) return gradesRaw;
     if (Array.isArray(gradesRaw?.grades)) return gradesRaw.grades;
     return [];
   }, [gradesRaw]);
 
-  const primaryGrades = useMemo(() => {
+  const activeGrades = useMemo(() => {
     return grades
-      .map((g) => ({ ...g, _num: getGradeNumber(g), _label: getGradeLabel(g) }))
-      .filter((g) => g._num != null && g._num >= 1 && g._num <= 5)
-      .sort((a, b) => a._num - b._num);
+      .map((g) => ({
+        ...g,
+        _num: getGradeNumber(g),
+        _label: getGradeLabel(g),
+      }))
+      .filter((g) => Number.isInteger(g._num));
   }, [grades]);
+
+  const primaryGrades = useMemo(() => {
+    return activeGrades
+      .filter((g) => g._num >= 1 && g._num <= 5)
+      .sort((a, b) => a._num - b._num);
+  }, [activeGrades]);
 
   const secondaryGrades = useMemo(() => {
-    return grades
-      .map((g) => ({ ...g, _num: getGradeNumber(g), _label: getGradeLabel(g) }))
-      .filter((g) => g._num != null && g._num >= 6 && g._num <= 11)
+    return activeGrades
+      .filter((g) => g._num >= 6 && g._num <= 11)
       .sort((a, b) => a._num - b._num);
-  }, [grades]);
+  }, [activeGrades]);
 
   const alGrades = useMemo(() => {
-    return grades
-      .map((g) => ({ ...g, _num: getGradeNumber(g), _label: getGradeLabel(g) }))
-      .filter((g) => g._num != null && g._num >= 12 && g._num <= 13)
+    return activeGrades
+      .filter((g) => g._num >= 12 && g._num <= 13)
       .sort((a, b) => a._num - b._num);
-  }, [grades]);
+  }, [activeGrades]);
 
   const streamsForSelected = useMemo(() => {
-    if (!selectedALGradeNum) return [];
-    if (Array.isArray(streamsRaw?.streams)) return streamsRaw.streams; // if backend returns {streams:[]}
-    if (Array.isArray(streamsRaw)) return streamsRaw; // if transformResponse returns array
-    return streamsByGrade?.[selectedALGradeNum] || [];
-  }, [selectedALGradeNum, streamsRaw, streamsByGrade]);
+    if (!selectedALMode) return [];
 
-  // ✅ store grades in redux (optional)
+    if (Array.isArray(streamsRaw?.streams)) return streamsRaw.streams;
+    if (Array.isArray(streamsRaw)) return streamsRaw;
+
+    return streamsByGrade?.al || [];
+  }, [selectedALMode, streamsRaw, streamsByGrade]);
+
   useEffect(() => {
-    if (grades.length > 0) dispatch(setGrades(grades));
+    if (grades.length > 0) {
+      dispatch(setGrades(grades));
+    }
   }, [grades, dispatch]);
 
-  // ✅ store streams in redux (optional)
   useEffect(() => {
-    if (selectedALGradeNum && Array.isArray(streamsForSelected)) {
-      dispatch(setStreamsForGrade({ gradeNumber: selectedALGradeNum, streams: streamsForSelected }));
+    if (selectedALMode && Array.isArray(streamsForSelected)) {
+      dispatch(
+        setStreamsForGrade({
+          gradeNumber: "al",
+          streams: streamsForSelected,
+        })
+      );
     }
-  }, [selectedALGradeNum, streamsForSelected, dispatch]);
+  }, [selectedALMode, streamsForSelected, dispatch]);
 
-  // ---------- UI early returns ----------
   if (!fontsLoaded) {
     return (
       <View style={styles.loaderWrap}>
@@ -175,7 +196,6 @@ export default function MainSelectgrade({ navigation }) {
     );
   }
 
-  // ---------- actions ----------
   const goSignin = () => {
     navigation.replace("Sign", { mode: "signin", phone: pendingPhone || "" });
   };
@@ -190,19 +210,27 @@ export default function MainSelectgrade({ navigation }) {
     setModalType(null);
   };
 
-  // ✅ save to DB only if already logged in (token exists)
-  const saveToDbIfPossible = async ({ level, gradeLabel, stream }) => {
+  const openALStreams = () => {
+    setSelectedALMode(true);
+    setStreamModalOpen(true);
+  };
+
+  const closeStreamModal = () => {
+    setStreamModalOpen(false);
+    setSelectedALMode(false);
+  };
+
+  const saveToDbIfPossible = async ({ level, gradeNumber, stream }) => {
     try {
-      if (!token) return; // not logged in yet
+      if (!token) return;
       if (!user || user?.role !== "student") return;
       if (user?.gradeSelectionLocked) return;
 
-      const gNum = parseGradeNumber(gradeLabel);
-      if (!gNum) return;
+      if (!gradeNumber) return;
 
       const resp = await saveGradeSelection({
         level,
-        gradeNumber: gNum,
+        gradeNumber,
         stream: level === "al" ? stream : null,
       }).unwrap();
 
@@ -211,40 +239,34 @@ export default function MainSelectgrade({ navigation }) {
         dispatch(updateUserFields(resp.user));
       }
 
-      // optional clear after DB save
       dispatch(clearGradeSelection());
     } catch (e) {
       const status = e?.status || e?.originalStatus;
-      if (status === 409) return; // already locked
+      if (status === 409) return;
       console.log("save grade selection failed:", e);
     }
   };
 
-  const pickNormalGrade = async (level, gradeLabel) => {
+  const pickNormalGrade = async (level, gradeObj) => {
+    const gradeLabel = gradeObj?._label || getGradeLabel(gradeObj);
+    const gradeNumber = gradeObj?._num || getGradeNumber(gradeObj);
+
     dispatch(setGradeSelection({ level, grade: gradeLabel, stream: null }));
     closeGradeModal();
 
-    // ✅ if already logged in, save immediately
-    await saveToDbIfPossible({ level, gradeLabel, stream: null });
+    await saveToDbIfPossible({
+      level,
+      gradeNumber,
+      stream: null,
+    });
 
-    // ✅ your flow: go to Signin
     goSignin();
-  };
-
-  const pickALGrade = (gradeNum) => {
-    setSelectedALGradeNum(gradeNum);
-    closeGradeModal();
-    setStreamModalOpen(true);
-  };
-
-  const closeStreamModal = () => {
-    setStreamModalOpen(false);
-    setSelectedALGradeNum(null);
   };
 
   const pickStream = async (streamObj) => {
     const streamLabel = getStreamLabel(streamObj);
-    const gradeLabel = `Grade ${selectedALGradeNum}`;
+    const gradeNumber = chooseALGradeNumber(streamObj);
+    const gradeLabel = `Grade ${gradeNumber}`;
 
     dispatch(
       setGradeSelection({
@@ -256,8 +278,11 @@ export default function MainSelectgrade({ navigation }) {
 
     closeStreamModal();
 
-    // ✅ if already logged in, save immediately
-    await saveToDbIfPossible({ level: "al", gradeLabel, stream: streamLabel });
+    await saveToDbIfPossible({
+      level: "al",
+      gradeNumber,
+      stream: streamLabel,
+    });
 
     goSignin();
   };
@@ -266,17 +291,25 @@ export default function MainSelectgrade({ navigation }) {
     <Pressable
       style={({ pressed }) => [styles.gradeCard, pressed && styles.pressed]}
       onPress={() => {
+        if (level === "al") {
+          if (!alGrades.length) {
+            Alert.alert("No A/L", "Backend has no A/L grades.");
+            return;
+          }
+          openALStreams();
+          return;
+        }
+
         const has =
           level === "primary"
             ? primaryGrades.length > 0
-            : level === "secondary"
-            ? secondaryGrades.length > 0
-            : alGrades.length > 0;
+            : secondaryGrades.length > 0;
 
         if (!has) {
           Alert.alert("No Grades", "Backend has no grades for this category.");
           return;
         }
+
         openGradeModal(level);
       }}
     >
@@ -296,21 +329,21 @@ export default function MainSelectgrade({ navigation }) {
       ? primaryGrades
       : modalType === "secondary"
       ? secondaryGrades
-      : modalType === "al"
-      ? alGrades
       : [];
 
   const gradeModalTitle =
     modalType === "primary"
       ? "Select Grade (Primary)"
-      : modalType === "secondary"
-      ? "Select Grade (Secondary)"
-      : "Select Grade (A/L)";
+      : "Select Grade (Secondary)";
 
   return (
     <View style={styles.container}>
       <View style={styles.centerGroup}>
-        <Image source={lesiiskole_logo} style={styles.logo} resizeMode="contain" />
+        <Image
+          source={lesiiskole_logo}
+          style={styles.logo}
+          resizeMode="contain"
+        />
         <Text style={styles.pageTitle}>Select your grade</Text>
 
         <View style={styles.cardsWrap}>
@@ -329,13 +362,12 @@ export default function MainSelectgrade({ navigation }) {
           <GradeCard
             img={alstudents}
             title="A/L"
-            subTitle="Grades 12 - 13 (stream required)"
+            subTitle="Show available streams"
             level="al"
           />
         </View>
       </View>
 
-      {/* ✅ Grade modal */}
       <Modal visible={gradeModalOpen} transparent animationType="fade">
         <Pressable style={styles.modalOverlay} onPress={closeGradeModal}>
           <Pressable style={styles.modalCard} onPress={() => {}}>
@@ -350,10 +382,7 @@ export default function MainSelectgrade({ navigation }) {
                 <Pressable
                   key={g?._id || g?._label || String(g?._num)}
                   style={styles.modalItem}
-                  onPress={() => {
-                    if (modalType === "al") pickALGrade(g._num);
-                    else pickNormalGrade(modalType, g._label);
-                  }}
+                  onPress={() => pickNormalGrade(modalType, g)}
                 >
                   <Text style={styles.modalItemText}>{g._label}</Text>
                 </Pressable>
@@ -363,15 +392,10 @@ export default function MainSelectgrade({ navigation }) {
         </Pressable>
       </Modal>
 
-      {/* ✅ Stream modal */}
       <Modal visible={streamModalOpen} transparent animationType="fade">
         <Pressable style={styles.modalOverlay} onPress={closeStreamModal}>
           <Pressable style={styles.modalCard} onPress={() => {}}>
-            <Text style={styles.modalTitle}>
-              {selectedALGradeNum
-                ? `Select Stream (Grade ${selectedALGradeNum})`
-                : "Select Stream"}
-            </Text>
+            <Text style={styles.modalTitle}>Select Stream (A/L)</Text>
 
             {streamsLoading ? (
               <View style={{ alignItems: "center", paddingVertical: 14 }}>
@@ -386,12 +410,14 @@ export default function MainSelectgrade({ navigation }) {
                   Failed to load streams
                 </Text>
                 <Pressable onPress={refetchStreams} style={{ marginTop: 10 }}>
-                  <Text style={{ color: "#214294", fontWeight: "900" }}>Try again</Text>
+                  <Text style={{ color: "#214294", fontWeight: "900" }}>
+                    Try again
+                  </Text>
                 </Pressable>
               </>
             ) : streamsForSelected.length === 0 ? (
               <Text style={{ color: "#64748B", fontWeight: "700" }}>
-                No streams available for this grade.
+                No streams available for A/L.
               </Text>
             ) : (
               streamsForSelected.map((s) => (
