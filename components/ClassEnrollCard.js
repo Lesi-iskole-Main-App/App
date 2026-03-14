@@ -89,6 +89,7 @@ export default function ClassEnrollCard({
   status = "",
   onPressView,
   onPressEnroll,
+  onPressDemo,
 }) {
   const { t, lang, sinFont } = useT();
 
@@ -163,12 +164,34 @@ export default function ClassEnrollCard({
 
       <View style={styles.bottomRow}>
         <Pressable
+          onPress={onPressDemo}
+          style={({ pressed }) => [
+            styles.demoBtn,
+            pressed && styles.actionPressed,
+          ]}
+        >
+          <Text
+            style={[
+              styles.demoBtnText,
+              lang === "si" && sinFont("bold"),
+            ]}
+          >
+            Demo Lesson
+          </Text>
+
+          <View style={styles.demoIconChip}>
+            <Ionicons name="play" size={14} color={PRIMARY} />
+          </View>
+        </Pressable>
+
+        <Pressable
           onPress={canView ? onPressView : onPressEnroll}
+          disabled={isPending}
           style={({ pressed }) => [
             styles.actionBtn,
             canView && styles.viewBtn,
             isPending && styles.pendingBtn,
-            pressed && styles.actionPressed,
+            pressed && !isPending && styles.actionPressed,
           ]}
         >
           <Text
@@ -409,6 +432,36 @@ const styles = StyleSheet.create({
 
   bottomRow: {
     alignItems: "stretch",
+    gap: 10,
+  },
+
+  demoBtn: {
+    minHeight: 44,
+    borderRadius: 14,
+    paddingLeft: 14,
+    paddingRight: 10,
+    backgroundColor: "#EEF4FF",
+    borderWidth: 1,
+    borderColor: "#D7E5FF",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  demoBtnText: {
+    color: PRIMARY,
+    fontSize: 13,
+    fontWeight: "800",
+    letterSpacing: 0.1,
+  },
+
+  demoIconChip: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   actionBtn: {

@@ -33,15 +33,20 @@ export default function EnrollSubjects({ route }) {
   const [studentName, setStudentName] = useState("");
   const [studentPhone, setStudentPhone] = useState("");
 
-  const gradeLabel = route?.params?.grade || "Grade 4";
+  const gradeLabel = route?.params?.grade || "A/L";
   const gradeNumberParam = route?.params?.gradeNumber;
   const subjectName = route?.params?.subjectName || "";
   const streamName = route?.params?.streamName || "";
 
   const gradeNo = useMemo(
-    () => Number(gradeNumberParam) || numberFromGrade(gradeLabel),
+    () =>
+      Number.isFinite(Number(gradeNumberParam))
+        ? Number(gradeNumberParam)
+        : numberFromGrade(gradeLabel),
     [gradeNumberParam, gradeLabel]
   );
+
+  const shouldSkipClasses = !gradeNo && !String(streamName || "").trim();
 
   const {
     data: classes = [],
@@ -50,11 +55,11 @@ export default function EnrollSubjects({ route }) {
     refetch,
   } = useGetClassesByGradeAndSubjectQuery(
     {
-      gradeNumber: gradeNo,
+      gradeNumber: gradeNo || null,
       subjectName,
       streamName,
     },
-    { skip: !gradeNo }
+    { skip: shouldSkipClasses }
   );
 
   const {
@@ -63,12 +68,11 @@ export default function EnrollSubjects({ route }) {
     refetch: refetchMyReq,
   } = useGetMyEnrollRequestsQuery();
 
-  // ✅ auto refresh when page is focused again
   useFocusEffect(
     useCallback(() => {
-      if (gradeNo) refetch?.();
+      if (!shouldSkipClasses) refetch?.();
       refetchMyReq?.();
-    }, [gradeNo, refetch, refetchMyReq])
+    }, [shouldSkipClasses, refetch, refetchMyReq])
   );
 
   const myReqMap = useMemo(() => {
@@ -112,13 +116,35 @@ export default function EnrollSubjects({ route }) {
     }
   };
 
-  const goLessons = (cls) => {
+  const goDemoLesson = (cls) => {
+    const req = myReqMap[String(cls?._id)];
+    const status = String(req?.status || "").toLowerCase();
+
     navigation.navigate("Lessons", {
       classId: cls._id,
       className: cls.className,
       grade: gradeLabel,
       subject: cls?.subjectName || subjectName || "",
       teacher: "",
+      streamName: streamName || "",
+      enrollStatus: status,
+      demoOnly: true,
+    });
+  };
+
+  const goFullLessons = (cls) => {
+    const req = myReqMap[String(cls?._id)];
+    const status = String(req?.status || "").toLowerCase();
+
+    navigation.navigate("Lessons", {
+      classId: cls._id,
+      className: cls.className,
+      grade: gradeLabel,
+      subject: cls?.subjectName || subjectName || "",
+      teacher: "",
+      streamName: streamName || "",
+      enrollStatus: status,
+      demoOnly: false,
     });
   };
 
@@ -180,13 +206,8 @@ export default function EnrollSubjects({ route }) {
                     ? "pending"
                     : ""
                 }
-                onPressView={() => {
-                  if (status === "approved") {
-                    goLessons(c);
-                  } else {
-                    alert("Only approved enrolled classes can open lessons.");
-                  }
-                }}
+                onPressDemo={() => goDemoLesson(c)}
+                onPressView={() => goFullLessons(c)}
                 onPressEnroll={() => openModal(c)}
               />
             );
@@ -198,7 +219,9 @@ export default function EnrollSubjects({ route }) {
               <Text style={styles.centerInfo}>
                 {streamName
                   ? `No classes available for ${streamName}.`
-                  : "No classes available for this grade."}
+                  : gradeNo
+                  ? "No classes available for this grade."
+                  : "No classes available."}
               </Text>
             </View>
           )}

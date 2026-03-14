@@ -4,10 +4,9 @@ import { Picker } from "@react-native-picker/picker";
 import { useNavigation } from "@react-navigation/native";
 
 import useUser from "../app/hooks/useUser";
-import { useGetGradeDetailQuery } from "../app/gradeApi";
+import { useGetPublishedPaperSubjectsQuery } from "../app/paperApi";
 import useT from "../app/i18n/useT";
 
-const norm = (v) => String(v || "").trim().toLowerCase();
 const TAB_BAR_SPACE = 110;
 
 export default function DailyQuiz() {
@@ -24,22 +23,27 @@ export default function DailyQuiz() {
 
   const isAL = gradeNumber === 12 || gradeNumber === 13 || level === "al";
 
-  const { data: gradeDoc, isLoading, isFetching, error } =
-    useGetGradeDetailQuery(gradeNumber, { skip: !gradeNumber });
+  const canFetchSubjects = !!gradeNumber && (!isAL || !!stream);
+
+  const {
+    data: publishedSubjects = [],
+    isLoading,
+    isFetching,
+    error,
+  } = useGetPublishedPaperSubjectsQuery(
+    {
+      gradeNumber,
+      paperType: "Daily Quiz",
+      stream: isAL ? stream : null,
+    },
+    { skip: !canFetchSubjects }
+  );
 
   const subjectsToShow = useMemo(() => {
-    if (!gradeDoc) return [];
-
-    if (!isAL) {
-      const list = Array.isArray(gradeDoc?.subjects) ? gradeDoc.subjects : [];
-      return list.map((x) => x?.subject).filter(Boolean);
-    }
-
-    const streams = Array.isArray(gradeDoc?.streams) ? gradeDoc.streams : [];
-    const st = streams.find((s) => norm(s?.stream) === norm(stream));
-    const subs = Array.isArray(st?.subjects) ? st.subjects : [];
-    return subs.map((x) => x?.subject).filter(Boolean);
-  }, [gradeDoc, isAL, stream]);
+    return Array.isArray(publishedSubjects)
+      ? publishedSubjects.filter(Boolean)
+      : [];
+  }, [publishedSubjects]);
 
   const canStart = !!gradeNumber && !!selectedSubject && (!isAL || !!stream);
 
@@ -90,11 +94,11 @@ export default function DailyQuiz() {
     );
   }
 
-  if (error || !gradeDoc) {
+  if (error) {
     return (
       <View style={styles.center}>
         <Text style={styles.title}>Subjects not available</Text>
-        <Text style={styles.helperText}>Check backend Grade data.</Text>
+        <Text style={styles.helperText}>Check backend published daily quiz papers.</Text>
       </View>
     );
   }
@@ -102,10 +106,10 @@ export default function DailyQuiz() {
   if (!subjectsToShow.length) {
     return (
       <View style={styles.center}>
-        <Text style={styles.title}>No Subjects Found</Text>
+        <Text style={styles.title}>No Daily Quiz Subjects Found</Text>
         <Text style={styles.helperText}>
-          Please add subjects in backend for grade {gradeNumber}
-          {isAL ? " and stream" : ""}.
+          Please publish daily quiz papers for this
+          {isAL ? " grade and stream." : " grade."}
         </Text>
       </View>
     );
@@ -115,7 +119,9 @@ export default function DailyQuiz() {
     <View style={styles.screen}>
       <View style={styles.card}>
         <Text style={[styles.title, isSi ? sinFont("bold") : null]}>{UI.title}</Text>
-        <Text style={[styles.subTitle, isSi ? sinFont("regular") : null]}>{UI.selectSubject}</Text>
+        <Text style={[styles.subTitle, isSi ? sinFont("regular") : null]}>
+          {UI.selectSubject}
+        </Text>
 
         <Text style={[styles.infoRow, isSi ? sinFont("regular") : null]}>
           {UI.grade} <Text style={styles.bold}>{gradeNumber}</Text>
@@ -153,7 +159,9 @@ export default function DailyQuiz() {
             pressed && canStart && styles.pressed,
           ]}
         >
-          <Text style={[styles.startBtnText, isSi ? sinFont("bold") : null]}>{UI.continue}</Text>
+          <Text style={[styles.startBtnText, isSi ? sinFont("bold") : null]}>
+            {UI.continue}
+          </Text>
         </Pressable>
       </View>
     </View>

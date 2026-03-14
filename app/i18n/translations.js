@@ -28,6 +28,12 @@ export const translations = {
     WatchNow: "msúfikak",
     Lesson: "mdvu",
     ViewLesson: "mdvï n,kak",
+    physical_science: "fN!;sl úoHd wxYh",
+    biological_science: "Ôj úoHd wxYh",
+    commerce: "jdksc wxYh",
+    arts: "l,d wxYh",
+    technology: ";dlaIKfõoh",
+    common: "fmdÿ úIh Odrdj",
 
     // Nav / useful legacy
     navHome: "uq,a msgqj",
@@ -418,6 +424,12 @@ viewLessons: "View Lessons",
 requestPending: "Request Pending",
 enrollNow: "Enroll Now",
 
+physical_science: "Physical Science",
+    biological_science: "Biological Science",
+    commerce: "Commerce",
+    arts: "Arts",
+    technology: "Technology",
+    common: "Common",
     districts: {
       Ampara: "Ampara",
       Anuradhapura: "Anuradhapura",

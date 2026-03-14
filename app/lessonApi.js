@@ -13,7 +13,7 @@ export const lessonApi = createApi({
       return headers;
     },
   }),
-  tagTypes: ["Lesson"],
+  tagTypes: ["Lessons"],
   endpoints: (builder) => ({
     getLessonsByClassId: builder.query({
       query: (classId) => ({
@@ -24,9 +24,24 @@ export const lessonApi = createApi({
         if (Array.isArray(res?.lessons)) return res.lessons;
         return [];
       },
-      providesTags: ["Lesson"],
+      providesTags: ["Lessons"],
+    }),
+
+    getPublicDemoLessonsByClassId: builder.query({
+      query: (classId) => ({
+        url: `/public/class/${classId}`,
+        method: "GET",
+      }),
+      transformResponse: (res) => {
+        if (Array.isArray(res?.lessons)) return res.lessons;
+        return [];
+      },
+      providesTags: ["Lessons"],
     }),
   }),
 });
 
-export const { useGetLessonsByClassIdQuery } = lessonApi;
+export const {
+  useGetLessonsByClassIdQuery,
+  useGetPublicDemoLessonsByClassIdQuery,
+} = lessonApi;

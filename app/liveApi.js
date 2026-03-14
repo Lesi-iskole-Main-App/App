@@ -13,21 +13,36 @@ export const liveApi = createApi({
       return headers;
     },
   }),
-  tagTypes: ["Live"],
+  tagTypes: ["Lives"],
   endpoints: (builder) => ({
+    // ✅ student dashboard live list
     getStudentLives: builder.query({
       query: () => ({
         url: "/student",
         method: "GET",
       }),
       transformResponse: (res) => {
-        if (Array.isArray(res?.lives)) return { lives: res.lives };
-        return { lives: [] };
+        if (Array.isArray(res?.lives)) return res.lives;
+        return [];
       },
-      providesTags: ["Live"],
+      providesTags: ["Lives"],
     }),
 
-    getLiveByClassId: builder.query({
+    // ✅ all lives
+    getAllLives: builder.query({
+      query: () => ({
+        url: "/",
+        method: "GET",
+      }),
+      transformResponse: (res) => {
+        if (Array.isArray(res?.lives)) return res.lives;
+        return [];
+      },
+      providesTags: ["Lives"],
+    }),
+
+    // ✅ lives by class
+    getLivesByClassId: builder.query({
       query: (classId) => ({
         url: `/class/${classId}`,
         method: "GET",
@@ -36,9 +51,28 @@ export const liveApi = createApi({
         if (Array.isArray(res?.lives)) return res.lives;
         return [];
       },
-      providesTags: ["Live"],
+      providesTags: (result, error, classId) => [
+        { type: "Lives", id: String(classId) },
+      ],
+    }),
+
+    // ✅ one live
+    getLiveByClassIdAndLiveId: builder.query({
+      query: ({ classId, liveId }) => ({
+        url: `/class/${classId}/${liveId}`,
+        method: "GET",
+      }),
+      transformResponse: (res) => res?.live || null,
+      providesTags: (result, error, arg) => [
+        { type: "Lives", id: `${String(arg?.classId)}-${String(arg?.liveId)}` },
+      ],
     }),
   }),
 });
 
-export const { useGetStudentLivesQuery, useGetLiveByClassIdQuery } = liveApi;
+export const {
+  useGetStudentLivesQuery,
+  useGetAllLivesQuery,
+  useGetLivesByClassIdQuery,
+  useGetLiveByClassIdAndLiveIdQuery,
+} = liveApi;

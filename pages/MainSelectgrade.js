@@ -56,14 +56,8 @@ const getStreamLabel = (s) => {
   return s?.label || s?.stream || s?.name || s?.title || "—";
 };
 
-const chooseALGradeNumber = (streamObj) => {
-  const gradeNumbers = Array.isArray(streamObj?.gradeNumbers)
-    ? [...streamObj.gradeNumbers].sort((a, b) => a - b)
-    : [];
-
-  if (gradeNumbers.includes(12)) return 12;
-  if (gradeNumbers.length) return gradeNumbers[0];
-  return 12;
+const getStreamValue = (s) => {
+  return String(s?.stream || s?.value || s?.key || "").trim();
 };
 
 export default function MainSelectgrade({ navigation }) {
@@ -83,7 +77,7 @@ export default function MainSelectgrade({ navigation }) {
   });
 
   const [gradeModalOpen, setGradeModalOpen] = useState(false);
-  const [modalType, setModalType] = useState(null); // "primary" | "secondary"
+  const [modalType, setModalType] = useState(null);
 
   const [streamModalOpen, setStreamModalOpen] = useState(false);
   const [selectedALMode, setSelectedALMode] = useState(false);
@@ -265,14 +259,13 @@ export default function MainSelectgrade({ navigation }) {
 
   const pickStream = async (streamObj) => {
     const streamLabel = getStreamLabel(streamObj);
-    const gradeNumber = chooseALGradeNumber(streamObj);
-    const gradeLabel = `Grade ${gradeNumber}`;
+    const streamValue = getStreamValue(streamObj) || streamLabel;
 
     dispatch(
       setGradeSelection({
         level: "al",
-        grade: gradeLabel,
-        stream: streamLabel,
+        grade: "A/L",
+        stream: streamValue,
       })
     );
 
@@ -280,8 +273,8 @@ export default function MainSelectgrade({ navigation }) {
 
     await saveToDbIfPossible({
       level: "al",
-      gradeNumber,
-      stream: streamLabel,
+      gradeNumber: 12,
+      stream: streamValue,
     });
 
     goSignin();
@@ -422,7 +415,7 @@ export default function MainSelectgrade({ navigation }) {
             ) : (
               streamsForSelected.map((s) => (
                 <Pressable
-                  key={s?._id || getStreamLabel(s)}
+                  key={s?._id || getStreamValue(s) || getStreamLabel(s)}
                   style={styles.modalItem}
                   onPress={() => pickStream(s)}
                 >

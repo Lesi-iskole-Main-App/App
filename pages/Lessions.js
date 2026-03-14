@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useGetLessonsByClassIdQuery } from "../app/lessonApi";
+import { useGetMyEnrollRequestsQuery } from "../app/enrollApi";
 
 const PRIMARY = "#1153ec";
 const TAB_BAR_SPACE = 110;
@@ -27,6 +28,8 @@ export default function Lessons({ route }) {
   const grade = route?.params?.grade || "";
   const subject = route?.params?.subject || "";
   const teacher = route?.params?.teacher || "";
+  const routeEnrollStatus = String(route?.params?.enrollStatus || "").toLowerCase();
+  const demoOnly = !!route?.params?.demoOnly;
 
   const {
     data: lessons = [],
@@ -34,6 +37,24 @@ export default function Lessons({ route }) {
     isError,
     refetch,
   } = useGetLessonsByClassIdQuery(classId, { skip: !classId });
+
+  const {
+    data: myReqData,
+    isLoading: reqLoading,
+  } = useGetMyEnrollRequestsQuery();
+
+  const currentEnrollStatus = useMemo(() => {
+    if (routeEnrollStatus) return routeEnrollStatus;
+
+    const list = myReqData?.requests || [];
+    const found = list.find(
+      (r) => String(r?.classId || r?.classDetails?.classId || "") === String(classId)
+    );
+
+    return String(found?.status || "").toLowerCase();
+  }, [routeEnrollStatus, myReqData, classId]);
+
+  const isApproved = currentEnrollStatus === "approved";
 
   const timeWithDot = (v) =>
     String(v || "")
@@ -59,6 +80,11 @@ export default function Lessons({ route }) {
     });
   }, [lessons]);
 
+  const visibleLessons = useMemo(() => {
+    if (isApproved && !demoOnly) return sortedLessons;
+    return sortedLessons.length > 0 ? [sortedLessons[0]] : [];
+  }, [sortedLessons, isApproved, demoOnly]);
+
   const onWatchNow = (lesson, index) => {
     navigation.navigate("ViewLesson", {
       lessonId: lesson?._id,
@@ -82,7 +108,7 @@ export default function Lessons({ route }) {
 
       {!classId ? (
         <Text style={styles.centerInfo}>Missing class</Text>
-      ) : isLoading ? (
+      ) : isLoading || reqLoading ? (
         <View style={styles.stateWrap}>
           <ActivityIndicator size="small" color={PRIMARY} />
           <Text style={styles.infoText}>Loading lessons...</Text>
@@ -94,64 +120,79 @@ export default function Lessons({ route }) {
             <Text style={styles.tryAgain}>Try again</Text>
           </Pressable>
         </View>
-      ) : sortedLessons.length === 0 ? (
+      ) : visibleLessons.length === 0 ? (
         <Text style={styles.centerInfo}>No lessons available.</Text>
       ) : (
-        sortedLessons.map((lesson, idx) => {
-          const lessonTitle =
-            cleanDisplayText(lesson?.title) || `Lesson ${idx + 1}`;
-          const lessonDescription =
-            cleanDisplayText(lesson?.description) || "No description available.";
+        <>
+          {!isApproved && (
+            <View style={styles.demoNoteCard}>
+              <Text style={styles.demoNoteTitle}>Demo Lesson</Text>
+              <Text style={styles.demoNoteText}>
+                This class currently shows only the first lesson as demo.
+                After enrollment approval, all lessons will be visible.
+              </Text>
+            </View>
+          )}
 
-          return (
-            <View style={styles.card} key={lesson?._id || String(idx)}>
-              <View style={styles.headerRow}>
-                <View style={styles.lessonBadge}>
-                  <Text style={styles.lessonBadgeText}>Lesson {idx + 1}</Text>
-                </View>
+          {visibleLessons.map((lesson, idx) => {
+            const lessonTitle =
+              cleanDisplayText(lesson?.title) ||
+              `${!isApproved ? "Demo Lesson" : "Lesson"} ${idx + 1}`;
+            const lessonDescription =
+              cleanDisplayText(lesson?.description) || "No description available.";
 
-                <View style={styles.metaWrap}>
-                  <View style={styles.metaBox}>
-                    <Text style={styles.metaLabel}>Date</Text>
-                    <Text style={styles.metaValue}>{lesson?.date || "-"}</Text>
-                  </View>
-
-                  <View style={styles.metaBox}>
-                    <Text style={styles.metaLabel}>Time</Text>
-                    <Text style={styles.metaValue}>
-                      {timeWithDot(lesson?.time) || "-"}
+            return (
+              <View style={styles.card} key={lesson?._id || String(idx)}>
+                <View style={styles.headerRow}>
+                  <View style={styles.lessonBadge}>
+                    <Text style={styles.lessonBadgeText}>
+                      {!isApproved ? "Demo Lesson" : `Lesson ${idx + 1}`}
                     </Text>
                   </View>
+
+                  <View style={styles.metaWrap}>
+                    <View style={styles.metaBox}>
+                      <Text style={styles.metaLabel}>Date</Text>
+                      <Text style={styles.metaValue}>{lesson?.date || "-"}</Text>
+                    </View>
+
+                    <View style={styles.metaBox}>
+                      <Text style={styles.metaLabel}>Time</Text>
+                      <Text style={styles.metaValue}>
+                        {timeWithDot(lesson?.time) || "-"}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+
+                <Text style={styles.lessonTitle} numberOfLines={2}>
+                  {lessonTitle}
+                </Text>
+
+                <View style={styles.divider} />
+
+                <View style={styles.descCard}>
+                  <Text style={styles.descLabel}>Description</Text>
+                  <Text style={styles.descText} numberOfLines={3}>
+                    {lessonDescription}
+                  </Text>
+                </View>
+
+                <View style={styles.buttonRow}>
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.watchBtn,
+                      pressed && styles.watchBtnPressed,
+                    ]}
+                    onPress={() => onWatchNow(lesson, idx)}
+                  >
+                    <Text style={styles.watchText}>Watch Now</Text>
+                  </Pressable>
                 </View>
               </View>
-
-              <Text style={styles.lessonTitle} numberOfLines={2}>
-                {lessonTitle}
-              </Text>
-
-              <View style={styles.divider} />
-
-              <View style={styles.descCard}>
-                <Text style={styles.descLabel}>Description</Text>
-                <Text style={styles.descText} numberOfLines={3}>
-                  {lessonDescription}
-                </Text>
-              </View>
-
-              <View style={styles.buttonRow}>
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.watchBtn,
-                    pressed && styles.watchBtnPressed,
-                  ]}
-                  onPress={() => onWatchNow(lesson, idx)}
-                >
-                  <Text style={styles.watchText}>Watch Now</Text>
-                </Pressable>
-              </View>
-            </View>
-          );
-        })
+            );
+          })}
+        </>
       )}
     </ScrollView>
   );
@@ -193,6 +234,29 @@ const styles = StyleSheet.create({
     color: "#64748B",
     fontWeight: "600",
     fontSize: 14,
+  },
+
+  demoNoteCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#D7E5FF",
+  },
+
+  demoNoteTitle: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: PRIMARY,
+    marginBottom: 4,
+  },
+
+  demoNoteText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#64748B",
+    lineHeight: 18,
   },
 
   card: {

@@ -1,4 +1,3 @@
-// app/paperApi.js
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import { BASE_URL } from "./api/api";
 
@@ -15,6 +14,24 @@ export const paperApi = createApi({
     credentials: "include",
   }),
   endpoints: (builder) => ({
+    getPublishedPaperSubjects: builder.query({
+      query: ({ gradeNumber, paperType, stream }) => {
+        const params = new URLSearchParams();
+        params.set("gradeNumber", String(gradeNumber));
+        params.set("paperType", String(paperType || "Daily Quiz"));
+        if (stream) params.set("stream", String(stream));
+
+        return {
+          url: `/public/subjects?${params.toString()}`,
+          method: "GET",
+        };
+      },
+      transformResponse: (res) => {
+        if (Array.isArray(res?.subjects)) return res.subjects;
+        return [];
+      },
+    }),
+
     getPublishedPapers: builder.query({
       query: ({ gradeNumber, paperType, stream, subject }) => {
         const params = new URLSearchParams();
@@ -22,7 +39,11 @@ export const paperApi = createApi({
         params.set("paperType", String(paperType || "Model paper"));
         if (stream) params.set("stream", String(stream));
         if (subject) params.set("subject", String(subject));
-        return { url: `/public?${params.toString()}`, method: "GET" };
+
+        return {
+          url: `/public?${params.toString()}`,
+          method: "GET",
+        };
       },
       transformResponse: (res) => {
         if (Array.isArray(res?.papers)) return res.papers;
@@ -32,4 +53,7 @@ export const paperApi = createApi({
   }),
 });
 
-export const { useGetPublishedPapersQuery } = paperApi;
+export const {
+  useGetPublishedPaperSubjectsQuery,
+  useGetPublishedPapersQuery,
+} = paperApi;
