@@ -1,7 +1,3 @@
-// pages/DailyQuizMenu.js ✅ FULL FILE
-// one day only one paper shown for current grade/subject(/stream)
-// same UI kept, only logic changed
-
 import React, { useMemo, useCallback, useState } from "react";
 import {
   View,
@@ -228,7 +224,7 @@ function getSriLankaDayIndex() {
   const now = new Date();
   const slDateText = now.toLocaleDateString("en-CA", {
     timeZone: "Asia/Colombo",
-  }); // YYYY-MM-DD
+  });
 
   const [y, m, d] = String(slDateText).split("-").map(Number);
 
@@ -240,7 +236,9 @@ function pickTodayPaper(papers) {
   if (!Array.isArray(papers) || !papers.length) return [];
 
   const dayIndex = getSriLankaDayIndex();
-  const selectedIndex = ((dayIndex % papers.length) + papers.length) % papers.length;
+  const selectedIndex =
+    ((dayIndex % papers.length) + papers.length) % papers.length;
+
   return [papers[selectedIndex]];
 }
 

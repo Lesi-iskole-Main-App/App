@@ -1,13 +1,3 @@
-// pages/Live.js ✅ FULL CODE
-// ✅ KEEP SAME UI DESIGN
-// ✅ SHOW ONLY ENROLLED + APPROVED STUDENT LIVE CLASS CARDS
-// ✅ SHOW CARD ONLY IN THIS TIME WINDOW:
-//    1 hour before scheduled time -> 10 hours after scheduled time
-// ✅ ONLY these 5 texts translate when Sinhala (legacy font only for them):
-//    Live Classes, Date, Time, LIVE, Join Class
-// ✅ All other text stays English
-// ✅ Fetched data not translated
-
 import React, { useMemo, useCallback } from "react";
 import {
   View,
@@ -20,7 +10,6 @@ import {
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useGetStudentLivesQuery } from "../app/liveApi";
-import useT from "../app/i18n/useT";
 
 const formatDate = (iso) => {
   try {
@@ -49,12 +38,7 @@ const formatTime = (iso) => {
 };
 
 export default function Live() {
-  const { t, lang, sinFont } = useT();
-  const isSi = lang === "si";
-  const LBL_REG = isSi ? sinFont("regular") : null;
-  const LBL_BOLD = isSi ? sinFont("bold") : null;
-
-  const { data, isLoading, isFetching, error, refetch } =
+  const { data = [], isLoading, isFetching, error, refetch } =
     useGetStudentLivesQuery(undefined, {
       pollingInterval: 10000,
       refetchOnFocus: true,
@@ -68,8 +52,7 @@ export default function Live() {
   );
 
   const lives = useMemo(() => {
-    const list = data?.lives || [];
-
+    const list = Array.isArray(data) ? data : [];
     return [...list].sort(
       (a, b) =>
         new Date(a?.scheduledAt || 0).getTime() -
@@ -83,16 +66,8 @@ export default function Live() {
       const can = await Linking.canOpenURL(url);
       if (can) await Linking.openURL(url);
     } catch (err) {
-      console.log("Failed to open zoom link:", err);
+      console.log("Failed to open live link:", err);
     }
-  };
-
-  const UI = {
-    pageTitle: isSi ? t("liveTitle") : "Live Classes",
-    date: isSi ? t("liveDate") : "Date",
-    time: isSi ? t("liveTime") : "Time",
-    live: isSi ? t("liveBadge") : "LIVE",
-    join: isSi ? t("liveJoin") : "Join Class",
   };
 
   if (isLoading) {
@@ -119,7 +94,7 @@ export default function Live() {
 
   return (
     <View style={styles.screen}>
-      <Text style={[styles.pageTitle, LBL_BOLD]}>{UI.pageTitle}</Text>
+      <Text style={styles.pageTitle}>Live Classes</Text>
 
       {isFetching ? (
         <View style={styles.refreshWrap}>
@@ -134,14 +109,21 @@ export default function Live() {
       ) : (
         <FlatList
           data={lives}
-          keyExtractor={(item) => String(item?._id)}
+          keyExtractor={(item, index) => String(item?._id || index)}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContent}
           renderItem={({ item }) => {
-            const title = item?.title || "Live Class";
-            const teacher = item?.teacherNames?.[0] || "Teacher";
+            const title = item?.title || item?.classTitle || "Live Class";
+            const teacher =
+              item?.teacherNames?.[0] ||
+              item?.teacherName ||
+              item?.teacher ||
+              "Teacher";
             const dateText = formatDate(item?.scheduledAt);
             const timeText = formatTime(item?.scheduledAt);
+            const batchNumber = String(
+              item?.batchNumber || item?.classDetails?.batchNumber || ""
+            ).trim();
 
             return (
               <View style={styles.card}>
@@ -153,19 +135,23 @@ export default function Live() {
                     <Text style={styles.teacher} numberOfLines={1}>
                       {teacher}
                     </Text>
+
+                    {!!batchNumber && (
+                      <View style={styles.batchPill}>
+                        <Text style={styles.batchPillText}>Batch {batchNumber}</Text>
+                      </View>
+                    )}
                   </View>
 
                   <View style={styles.liveBadge}>
                     <View style={styles.liveDot} />
-                    <Text style={[styles.liveBadgeText, LBL_BOLD]}>
-                      {UI.live}
-                    </Text>
+                    <Text style={styles.liveBadgeText}>LIVE</Text>
                   </View>
                 </View>
 
                 <View style={styles.infoRow}>
                   <View style={styles.infoItem}>
-                    <Text style={[styles.infoLabel, LBL_REG]}>{UI.date}</Text>
+                    <Text style={styles.infoLabel}>Date</Text>
                     <Text style={styles.infoValue} numberOfLines={1}>
                       {dateText || "-"}
                     </Text>
@@ -174,7 +160,7 @@ export default function Live() {
                   <View style={styles.infoDivider} />
 
                   <View style={styles.infoItem}>
-                    <Text style={[styles.infoLabel, LBL_REG]}>{UI.time}</Text>
+                    <Text style={styles.infoLabel}>Time</Text>
                     <Text style={styles.infoValue} numberOfLines={1}>
                       {timeText || "-"}
                     </Text>
@@ -183,9 +169,9 @@ export default function Live() {
 
                 <Pressable
                   style={styles.joinBtn}
-                  onPress={() => onJoin(item?.zoomLink)}
+                  onPress={() => onJoin(item?.zoomLink || item?.liveLink)}
                 >
-                  <Text style={[styles.joinBtnText, LBL_BOLD]}>{UI.join}</Text>
+                  <Text style={styles.joinBtnText}>Join Class</Text>
                 </Pressable>
               </View>
             );
@@ -291,11 +277,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderWidth: 1,
     borderColor: "#E2E8F0",
-    shadowColor: "#0F172A",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
   },
 
   headerRow: {
@@ -321,6 +302,23 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: "700",
     color: "#64748B",
+  },
+
+  batchPill: {
+    alignSelf: "flex-start",
+    marginTop: 6,
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "#D7E5FF",
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+
+  batchPillText: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: "#214294",
   },
 
   liveBadge: {

@@ -27,8 +27,35 @@ export const paperApi = createApi({
         };
       },
       transformResponse: (res) => {
-        if (Array.isArray(res?.subjects)) return res.subjects;
-        return [];
+        const rawSubjects = Array.isArray(res?.subjects) ? res.subjects : [];
+
+        return rawSubjects
+          .map((item) => {
+            if (typeof item === "string") {
+              const subject = String(item).trim();
+              if (!subject) return null;
+
+              return {
+                _id: subject,
+                subject,
+              };
+            }
+
+            if (item && typeof item === "object") {
+              const subject = String(item.subject || "").trim();
+              const _id = String(item._id || subject || "").trim();
+
+              if (!subject) return null;
+
+              return {
+                _id,
+                subject,
+              };
+            }
+
+            return null;
+          })
+          .filter(Boolean);
       },
     }),
 

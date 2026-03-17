@@ -1,5 +1,11 @@
-import React, { useMemo, useState } from "react";
-import { View, Text, StyleSheet, Pressable, ActivityIndicator } from "react-native";
+import React, { useMemo, useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  ActivityIndicator,
+} from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { useNavigation } from "@react-navigation/native";
 
@@ -41,9 +47,52 @@ export default function DailyQuiz() {
 
   const subjectsToShow = useMemo(() => {
     return Array.isArray(publishedSubjects)
-      ? publishedSubjects.filter(Boolean)
+      ? publishedSubjects
+          .map((item) => {
+            if (!item) return null;
+
+            if (typeof item === "string") {
+              const subject = String(item).trim();
+              return subject
+                ? {
+                    _id: subject,
+                    subject,
+                  }
+                : null;
+            }
+
+            if (typeof item === "object") {
+              const subject = String(item.subject || "").trim();
+              const _id = String(item._id || subject || "").trim();
+
+              if (!subject) return null;
+
+              return {
+                _id,
+                subject,
+              };
+            }
+
+            return null;
+          })
+          .filter(Boolean)
       : [];
   }, [publishedSubjects]);
+
+  useEffect(() => {
+    if (!subjectsToShow.length) {
+      setSelectedSubject("");
+      return;
+    }
+
+    const exists = subjectsToShow.some(
+      (item) => String(item.subject) === String(selectedSubject)
+    );
+
+    if (!exists) {
+      setSelectedSubject("");
+    }
+  }, [subjectsToShow, selectedSubject]);
 
   const canStart = !!gradeNumber && !!selectedSubject && (!isAL || !!stream);
 
@@ -54,6 +103,12 @@ export default function DailyQuiz() {
     stream: isSi ? t("streamLbl") : "Stream",
     subject: isSi ? t("subjectLbl") : "Subject",
     continue: isSi ? t("continueLbl") : "Continue",
+    noAvailableSubjects: isSi ? "විෂයයන් නොමැත" : "No available subjects",
+    loadingSubjects: isSi ? "විෂයයන් පූරණය වෙමින්..." : "Loading subjects...",
+    notSelected:
+      isSi
+        ? "පළමුව grade එක (A/L නම් stream එකත්) තෝරන්න."
+        : "Please select your grade (and stream for A/L) first.",
   };
 
   const onContinue = () => {
@@ -72,9 +127,7 @@ export default function DailyQuiz() {
     return (
       <View style={styles.center}>
         <Text style={styles.title}>Grade / Stream not selected</Text>
-        <Text style={styles.helperText}>
-          Please select your grade (and stream for A/L) first.
-        </Text>
+        <Text style={styles.helperText}>{UI.notSelected}</Text>
         <Pressable
           style={styles.primaryBtn}
           onPress={() => navigation.navigate("MainSelectgrade")}
@@ -89,7 +142,7 @@ export default function DailyQuiz() {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#2563EB" />
-        <Text style={styles.helperText}>Loading subjects...</Text>
+        <Text style={styles.helperText}>{UI.loadingSubjects}</Text>
       </View>
     );
   }
@@ -103,22 +156,13 @@ export default function DailyQuiz() {
     );
   }
 
-  if (!subjectsToShow.length) {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.title}>No Daily Quiz Subjects Found</Text>
-        <Text style={styles.helperText}>
-          Please publish daily quiz papers for this
-          {isAL ? " grade and stream." : " grade."}
-        </Text>
-      </View>
-    );
-  }
-
   return (
     <View style={styles.screen}>
       <View style={styles.card}>
-        <Text style={[styles.title, isSi ? sinFont("bold") : null]}>{UI.title}</Text>
+        <Text style={[styles.title, isSi ? sinFont("bold") : null]}>
+          {UI.title}
+        </Text>
+
         <Text style={[styles.subTitle, isSi ? sinFont("regular") : null]}>
           {UI.selectSubject}
         </Text>
@@ -127,13 +171,15 @@ export default function DailyQuiz() {
           {UI.grade} <Text style={styles.bold}>{gradeNumber}</Text>
         </Text>
 
-        {isAL && (
+        {isAL ? (
           <Text style={[styles.infoRow, isSi ? sinFont("regular") : null]}>
             {UI.stream} <Text style={styles.bold}>{stream}</Text>
           </Text>
-        )}
+        ) : null}
 
-        <Text style={[styles.label, isSi ? sinFont("bold") : null]}>{UI.subject}</Text>
+        <Text style={[styles.label, isSi ? sinFont("bold") : null]}>
+          {UI.subject}
+        </Text>
 
         <View style={styles.pickerWrap}>
           <Picker
@@ -143,12 +189,32 @@ export default function DailyQuiz() {
             itemStyle={styles.pickerItem}
             dropdownIconColor="#2563EB"
           >
-            <Picker.Item label="Select Subject" value="" />
+            <Picker.Item
+              label={
+                subjectsToShow.length
+                  ? UI.selectSubject
+                  : UI.noAvailableSubjects
+              }
+              value=""
+            />
+
             {subjectsToShow.map((sub) => (
-              <Picker.Item key={sub} label={sub} value={sub} />
+              <Picker.Item
+                key={String(sub._id)}
+                label={String(sub.subject)}
+                value={String(sub.subject)}
+              />
             ))}
           </Picker>
         </View>
+
+        {!subjectsToShow.length ? (
+          <Text style={styles.helperText}>
+            {isAL
+              ? "No available daily quiz subjects for this stream."
+              : "No available daily quiz subjects for this grade."}
+          </Text>
+        ) : null}
 
         <Pressable
           onPress={onContinue}

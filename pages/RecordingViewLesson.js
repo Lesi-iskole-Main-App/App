@@ -8,6 +8,7 @@ import {
   Platform,
   Pressable,
   Modal,
+  Linking,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -48,6 +49,7 @@ function getYouTubeId(url = "") {
 
 function isDirectVideoFile(url = "") {
   const cleanUrl = String(url || "").trim().toLowerCase();
+
   return (
     /\.mp4(\?|#|$)/i.test(cleanUrl) ||
     /\.m3u8(\?|#|$)/i.test(cleanUrl) ||
@@ -82,7 +84,7 @@ function getVideoHtml(url = "") {
         </style>
       </head>
       <body>
-        <video controls playsinline preload="metadata">
+        <video controls playsinline webkit-playsinline preload="metadata">
           <source src="${escapeHtml(safeUrl)}" />
         </video>
       </body>
@@ -152,6 +154,18 @@ export default function RecordingViewLesson({ route }) {
     return "";
   }, [isYoutube, youtubeId, isDirectFile, recordingUrl]);
 
+  const handleOpenExternal = async () => {
+    try {
+      if (!recordingUrl) return;
+      const supported = await Linking.canOpenURL(recordingUrl);
+      if (supported) {
+        await Linking.openURL(recordingUrl);
+      }
+    } catch (error) {
+      console.log("Failed to open recording url:", error);
+    }
+  };
+
   const renderPlayer = (playerHeight) => {
     if (!recordingUrl) {
       return (
@@ -188,6 +202,10 @@ export default function RecordingViewLesson({ route }) {
       <View style={styles.playerFallback}>
         <Ionicons name="alert-circle-outline" size={22} color="#FFFFFF" />
         <Text style={styles.fallbackText}>This link cannot play inside app</Text>
+
+        <Pressable style={styles.openExternalBtn} onPress={handleOpenExternal}>
+          <Text style={styles.openExternalBtnText}>Open Outside</Text>
+        </Pressable>
       </View>
     );
   };
@@ -221,12 +239,7 @@ export default function RecordingViewLesson({ route }) {
               </Pressable>
             </View>
 
-            <Text
-              style={[
-                styles.helperText,
-                isSi && styles.helperTextSi,
-              ]}
-            >
+            <Text style={[styles.helperText, isSi && styles.helperTextSi]}>
               {t("tapViewFullScreen")}
             </Text>
           </View>
@@ -319,12 +332,28 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
     backgroundColor: "#0B1220",
+    paddingHorizontal: 14,
   },
 
   fallbackText: {
     color: "#FFFFFF",
     fontWeight: "800",
     fontSize: 13,
+    textAlign: "center",
+  },
+
+  openExternalBtn: {
+    marginTop: 8,
+    backgroundColor: "#214294",
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 10,
+  },
+
+  openExternalBtnText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "800",
   },
 
   actionRow: {

@@ -18,24 +18,14 @@ import { setSelectedRecordingClass } from "../app/features/recordingSlice";
 const PRIMARY = "#214294";
 const TAB_BAR_SPACE = 110;
 
-const cleanText = (v) => String(v || "").replace(/\s+/g, " ").trim();
-
 const getImageSource = (item) => {
   const uri =
     item?.image ||
     item?.imageUrl ||
     item?.classImage ||
     item?.classImageUrl ||
-    item?.thumbnail ||
-    item?.thumbnailUrl ||
-    item?.banner ||
-    item?.bannerUrl ||
     "";
-
-  if (uri) {
-    return { uri: String(uri) };
-  }
-
+  if (uri) return { uri: String(uri) };
   return null;
 };
 
@@ -44,7 +34,7 @@ export default function RecordingClasses() {
   const dispatch = useDispatch();
 
   const {
-    data,
+    data = [],
     isLoading,
     isError,
     refetch,
@@ -66,23 +56,24 @@ export default function RecordingClasses() {
 
   const onOpenClass = (item) => {
     const teacherText = Array.isArray(item?.teachers)
-      ? item.teachers.join(", ")
+      ? item.teachers
+          .map((t) => (typeof t === "string" ? t : t?.name))
+          .filter(Boolean)
+          .join(", ")
       : "";
 
     const payload = {
-      classId: item?.classId || item?._id || "",
+      classId: item?._id || item?.classId || "",
       className: item?.className || "",
-      grade: item?.grade || "",
-      subject: item?.subject || "",
+      grade: item?.grade || item?.gradeLabel || "",
+      subject: item?.subject || item?.subjectName || "",
       teacher: teacherText,
+      batchNumber: item?.batchNumber || item?.batch || "",
     };
 
     dispatch(setSelectedRecordingClass(payload));
     navigation.navigate("RecordingLessons", payload);
   };
-
-  const shouldCenterCards =
-    Array.isArray(classes) && classes.length > 0 && classes.length <= 3;
 
   return (
     <View style={styles.screen}>
@@ -90,9 +81,7 @@ export default function RecordingClasses() {
 
       {isLoading ? (
         <View style={styles.stateWrap}>
-          <View style={styles.loaderBox}>
-            <ActivityIndicator size="small" color={PRIMARY} />
-          </View>
+          <ActivityIndicator size="small" color={PRIMARY} />
           <Text style={styles.infoText}>Loading approved recording classes...</Text>
         </View>
       ) : isError ? (
@@ -112,52 +101,40 @@ export default function RecordingClasses() {
       ) : (
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={[
-            styles.scrollContent,
-            shouldCenterCards && styles.scrollCentered,
-          ]}
+          contentContainerStyle={styles.scrollContent}
         >
           {classes.map((item, idx) => {
-            const className = cleanText(item?.className) || `Class ${idx + 1}`;
             const imageSource = getImageSource(item);
+            const className = String(item?.className || `Class ${idx + 1}`);
+            const batchNumber = String(item?.batchNumber || item?.batch || "").trim();
 
             return (
               <View
                 style={styles.card}
-                key={item?.classId || item?._id || String(idx)}
+                key={item?._id || item?.classId || String(idx)}
               >
-                <View style={styles.cardGlow} />
-
                 <View style={styles.topRow}>
                   <View style={styles.leftSection}>
-                    <View style={styles.thumbOuter}>
-                      <View style={styles.thumbWrap}>
-                        {imageSource ? (
-                          <Image
-                            source={imageSource}
-                            style={styles.image}
-                            resizeMode="cover"
+                    <View style={styles.thumbWrap}>
+                      {imageSource ? (
+                        <Image
+                          source={imageSource}
+                          style={styles.image}
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <View style={styles.imageFallback}>
+                          <Ionicons
+                            name="videocam-outline"
+                            size={22}
+                            color={PRIMARY}
                           />
-                        ) : (
-                          <View style={styles.imageFallback}>
-                            <View style={styles.iconCore}>
-                              <Ionicons
-                                name="videocam-outline"
-                                size={22}
-                                color={PRIMARY}
-                              />
-                            </View>
-                            <View style={styles.fallbackBlobOne} />
-                            <View style={styles.fallbackBlobTwo} />
-                            <View style={styles.fallbackMiniDot} />
-                          </View>
-                        )}
-                      </View>
+                        </View>
+                      )}
                     </View>
 
                     <View style={styles.infoWrap}>
                       <View style={styles.statusBadge}>
-                        <View style={styles.statusDot} />
                         <Text style={styles.statusText}>Approved</Text>
                       </View>
 
@@ -165,31 +142,29 @@ export default function RecordingClasses() {
                         {className}
                       </Text>
 
-                     
+                      {!!batchNumber && (
+                        <View style={styles.batchPill}>
+                          <Text style={styles.batchText}>Batch {batchNumber}</Text>
+                        </View>
+                      )}
                     </View>
                   </View>
                 </View>
 
                 <View style={styles.divider} />
 
-                <View style={styles.bottomRow}>
-                  <Pressable
-                    onPress={() => onOpenClass(item)}
-                    style={({ pressed }) => [
-                      styles.actionBtn,
-                      styles.viewBtn,
-                      pressed && styles.actionPressed,
-                    ]}
-                  >
-                    <Text style={[styles.actionBtnText, styles.viewBtnText]}>
-                      View Recordings
-                    </Text>
-
-                    <View style={[styles.iconChip, styles.viewIconChip]}>
-                      <Ionicons name="play" size={14} color={PRIMARY} />
-                    </View>
-                  </Pressable>
-                </View>
+                <Pressable
+                  onPress={() => onOpenClass(item)}
+                  style={({ pressed }) => [
+                    styles.actionBtn,
+                    pressed && styles.actionPressed,
+                  ]}
+                >
+                  <Text style={styles.actionBtnText}>View Recordings</Text>
+                  <View style={styles.iconChip}>
+                    <Ionicons name="play" size={14} color="#FFFFFF" />
+                  </View>
+                </Pressable>
               </View>
             );
           })}
@@ -220,22 +195,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingBottom: 40,
-  },
-
-  loaderBox: {
-    width: 50,
-    height: 50,
-    borderRadius: 16,
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#0F172A",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
   },
 
   infoText: {
@@ -271,11 +230,6 @@ const styles = StyleSheet.create({
     paddingBottom: TAB_BAR_SPACE,
   },
 
-  scrollCentered: {
-    flexGrow: 1,
-    justifyContent: "center",
-  },
-
   emptyCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 18,
@@ -284,11 +238,6 @@ const styles = StyleSheet.create({
     paddingVertical: 26,
     paddingHorizontal: 18,
     alignItems: "center",
-    shadowColor: "#0F172A",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 2,
   },
 
   emptyTitle: {
@@ -307,30 +256,12 @@ const styles = StyleSheet.create({
   },
 
   card: {
-    position: "relative",
     backgroundColor: "#FFFFFF",
     borderRadius: 22,
     borderWidth: 1,
     borderColor: "#E2E8F0",
     marginBottom: 14,
     padding: 14,
-    overflow: "hidden",
-    shadowColor: "#0F172A",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.05,
-    shadowRadius: 16,
-    elevation: 3,
-  },
-
-  cardGlow: {
-    position: "absolute",
-    top: -18,
-    right: -18,
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: "#EEF4FF",
-    opacity: 0.9,
   },
 
   topRow: {
@@ -344,13 +275,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  thumbOuter: {
-    padding: 2,
-    borderRadius: 20,
-    backgroundColor: "#F8FAFC",
-    marginRight: 12,
-  },
-
   thumbWrap: {
     width: 78,
     height: 78,
@@ -359,6 +283,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#EEF4FF",
     alignItems: "center",
     justifyContent: "center",
+    marginRight: 12,
   },
 
   image: {
@@ -372,52 +297,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#EEF4FF",
     alignItems: "center",
     justifyContent: "center",
-    position: "relative",
-  },
-
-  iconCore: {
-    width: 38,
-    height: 38,
-    borderRadius: 14,
-    backgroundColor: "#FFFFFF",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 2,
-    shadowColor: "#0F172A",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-
-  fallbackBlobOne: {
-    position: "absolute",
-    top: 10,
-    left: 9,
-    width: 18,
-    height: 18,
-    borderRadius: 8,
-    backgroundColor: "#DDD6FE",
-  },
-
-  fallbackBlobTwo: {
-    position: "absolute",
-    bottom: 10,
-    right: 10,
-    width: 15,
-    height: 15,
-    borderRadius: 7,
-    backgroundColor: "#BFDBFE",
-  },
-
-  fallbackMiniDot: {
-    position: "absolute",
-    top: 12,
-    right: 12,
-    width: 6,
-    height: 6,
-    borderRadius: 999,
-    backgroundColor: "#F59E0B",
   },
 
   infoWrap: {
@@ -428,8 +307,6 @@ const styles = StyleSheet.create({
 
   statusBadge: {
     alignSelf: "flex-start",
-    flexDirection: "row",
-    alignItems: "center",
     paddingHorizontal: 9,
     paddingVertical: 5,
     borderRadius: 999,
@@ -437,14 +314,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#BBF7D0",
     backgroundColor: "#ECFDF3",
-    gap: 6,
-  },
-
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 999,
-    backgroundColor: "#16A34A",
   },
 
   statusText: {
@@ -458,24 +327,23 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     color: "#0F172A",
     lineHeight: 22,
-    letterSpacing: 0.1,
   },
 
-  gradePill: {
+  batchPill: {
     alignSelf: "flex-start",
     marginTop: 8,
     backgroundColor: "#F8FAFC",
     borderWidth: 1,
-    borderColor: "#E2E8F0",
+    borderColor: "#D7E5FF",
+    borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 999,
   },
 
-  gradeText: {
+  batchText: {
     fontSize: 11,
-    fontWeight: "700",
-    color: "#475569",
+    fontWeight: "800",
+    color: PRIMARY,
   },
 
   divider: {
@@ -483,10 +351,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#EEF2F7",
     marginTop: 12,
     marginBottom: 12,
-  },
-
-  bottomRow: {
-    alignItems: "stretch",
   },
 
   actionBtn: {
@@ -500,26 +364,14 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
 
-  viewBtn: {
-    backgroundColor: "#EEF4FF",
-    borderWidth: 1,
-    borderColor: "#D7E5FF",
-  },
-
   actionPressed: {
     opacity: 0.94,
-    transform: [{ scale: 0.988 }],
   },
 
   actionBtnText: {
     color: "#FFFFFF",
     fontSize: 13,
     fontWeight: "800",
-    letterSpacing: 0.1,
-  },
-
-  viewBtnText: {
-    color: PRIMARY,
   },
 
   iconChip: {
@@ -529,9 +381,5 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.18)",
     alignItems: "center",
     justifyContent: "center",
-  },
-
-  viewIconChip: {
-    backgroundColor: "#FFFFFF",
   },
 });

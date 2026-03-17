@@ -8,6 +8,7 @@ import {
   Platform,
   Pressable,
   Modal,
+  Linking,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -18,19 +19,116 @@ import useT from "../app/i18n/useT";
 
 const { width, height } = Dimensions.get("window");
 
+function escapeHtml(value = "") {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 function getYouTubeId(url = "") {
   if (!url) return "";
 
-  const shortMatch = url.match(/youtu\.be\/([A-Za-z0-9_-]{6,})/);
+  const cleanUrl = String(url).trim();
+
+  const shortMatch = cleanUrl.match(/youtu\.be\/([A-Za-z0-9_-]{6,})/);
   if (shortMatch?.[1]) return shortMatch[1];
 
-  const watchMatch = url.match(/[?&]v=([A-Za-z0-9_-]{6,})/);
+  const watchMatch = cleanUrl.match(/[?&]v=([A-Za-z0-9_-]{6,})/);
   if (watchMatch?.[1]) return watchMatch[1];
 
-  const embedMatch = url.match(/youtube\.com\/embed\/([A-Za-z0-9_-]{6,})/);
+  const embedMatch = cleanUrl.match(/youtube\.com\/embed\/([A-Za-z0-9_-]{6,})/);
   if (embedMatch?.[1]) return embedMatch[1];
 
+  const shortsMatch = cleanUrl.match(/youtube\.com\/shorts\/([A-Za-z0-9_-]{6,})/);
+  if (shortsMatch?.[1]) return shortsMatch[1];
+
   return "";
+}
+
+function isDirectVideoFile(url = "") {
+  const cleanUrl = String(url || "").trim().toLowerCase();
+
+  return (
+    /\.mp4(\?|#|$)/i.test(cleanUrl) ||
+    /\.m3u8(\?|#|$)/i.test(cleanUrl) ||
+    /\.mov(\?|#|$)/i.test(cleanUrl) ||
+    /\.webm(\?|#|$)/i.test(cleanUrl)
+  );
+}
+
+function getVideoHtml(url = "") {
+  const safeUrl = String(url || "").trim();
+  if (!safeUrl) return "";
+
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1"/>
+        <style>
+          html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            overflow: hidden;
+          }
+          video {
+            width: 100%;
+            height: 100%;
+            background: #000;
+          }
+        </style>
+      </head>
+      <body>
+        <video controls playsinline webkit-playsinline preload="metadata">
+          <source src="${escapeHtml(safeUrl)}" />
+        </video>
+      </body>
+    </html>
+  `;
+}
+
+function getYouTubeEmbedHtml(videoId = "") {
+  if (!videoId) return "";
+
+  const src =
+    `https://www.youtube-nocookie.com/embed/${videoId}` +
+    `?playsinline=1&rel=0&modestbranding=1&controls=1`;
+
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1"/>
+        <style>
+          html, body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+          }
+          iframe {
+            width: 100%;
+            height: 100%;
+            border: 0;
+          }
+        </style>
+      </head>
+      <body>
+        <iframe
+          src="${src}"
+          allow="autoplay; encrypted-media; picture-in-picture"
+          allowfullscreen
+        ></iframe>
+      </body>
+    </html>
+  `;
 }
 
 export default function ViewLessonVideo({ route }) {
@@ -38,73 +136,82 @@ export default function ViewLessonVideo({ route }) {
   const isSi = lang === "si";
 
   const title = route?.params?.title ?? "Lesson Video";
-  const youtubeUrl =
-    route?.params?.youtubeUrl ?? "https://youtu.be/30cffBrABao";
+  const videoUrl =
+    route?.params?.youtubeUrl ??
+    route?.params?.videoUrl ??
+    route?.params?.lessonUrl ??
+    "";
 
   const [fullOpen, setFullOpen] = useState(false);
 
-  const videoId = useMemo(() => getYouTubeId(youtubeUrl), [youtubeUrl]);
+  const youtubeId = useMemo(() => getYouTubeId(videoUrl), [videoUrl]);
+  const isYoutube = !!youtubeId;
+  const isDirectFile = useMemo(() => isDirectVideoFile(videoUrl), [videoUrl]);
 
   const cardWidth = width - 32;
   const normalHeight = Math.round(cardWidth * 0.56);
   const fullHeight = Math.round(height * 0.34);
 
   const playerHtml = useMemo(() => {
-    if (!videoId) return "";
+    if (isYoutube) return getYouTubeEmbedHtml(youtubeId);
+    if (isDirectFile) return getVideoHtml(videoUrl);
+    return "";
+  }, [isYoutube, youtubeId, isDirectFile, videoUrl]);
 
-    const src =
-      `https://www.youtube-nocookie.com/embed/${videoId}` +
-      `?playsinline=1&rel=0&modestbranding=1&controls=1`;
-
-    return `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta name="viewport" content="width=device-width, initial-scale=1"/>
-          <style>
-            html, body {
-              margin:0;
-              padding:0;
-              background:#000;
-              width:100%;
-              height:100%;
-              overflow:hidden;
-            }
-            iframe {
-              width:100%;
-              height:100%;
-              border:0;
-            }
-          </style>
-        </head>
-        <body>
-          <iframe
-            src="${src}"
-            allow="autoplay; encrypted-media; picture-in-picture"
-            allowfullscreen
-          ></iframe>
-        </body>
-      </html>
-    `;
-  }, [videoId]);
+  const handleOpenExternal = async () => {
+    try {
+      if (!videoUrl) return;
+      const supported = await Linking.canOpenURL(videoUrl);
+      if (supported) {
+        await Linking.openURL(videoUrl);
+      }
+    } catch (error) {
+      console.log("Failed to open lesson video url:", error);
+    }
+  };
 
   const renderPlayer = (playerHeight) => {
-    if (!videoId) {
+    if (!videoUrl) {
       return (
         <View style={styles.playerFallback}>
           <Ionicons name="alert-circle-outline" size={22} color="#FFFFFF" />
-          <Text style={styles.fallbackText}>Invalid YouTube link</Text>
+          <Text style={styles.fallbackText}>Missing lesson video link</Text>
         </View>
       );
     }
 
-    if (Platform.OS === "web") {
+    if (isYoutube) {
+      if (Platform.OS === "web") {
+        return (
+          <CrossWebView
+            source={{ html: playerHtml }}
+            style={[styles.webview, { height: playerHeight }]}
+          />
+        );
+      }
+
+      return <YoutubePlayerBox videoId={youtubeId} height={playerHeight} />;
+    }
+
+    if (isDirectFile) {
       return (
-        <CrossWebView source={{ html: playerHtml }} style={styles.webview} />
+        <CrossWebView
+          source={{ html: playerHtml }}
+          style={[styles.webview, { height: playerHeight }]}
+        />
       );
     }
 
-    return <YoutubePlayerBox videoId={videoId} height={playerHeight} />;
+    return (
+      <View style={styles.playerFallback}>
+        <Ionicons name="alert-circle-outline" size={22} color="#FFFFFF" />
+        <Text style={styles.fallbackText}>This link cannot play inside app</Text>
+
+        <Pressable style={styles.openExternalBtn} onPress={handleOpenExternal}>
+          <Text style={styles.openExternalBtnText}>Open Outside</Text>
+        </Pressable>
+      </View>
+    );
   };
 
   return (
@@ -136,13 +243,7 @@ export default function ViewLessonVideo({ route }) {
               </Pressable>
             </View>
 
-            {/* ✅ Sinhala = AbhayaLibre (Unicode Sinhala looks correct) */}
-            <Text
-              style={[
-                styles.helperText,
-                isSi && styles.helperTextSi,
-              ]}
-            >
+            <Text style={[styles.helperText, isSi && styles.helperTextSi]}>
               {t("tapViewFullScreen")}
             </Text>
           </View>
@@ -177,7 +278,10 @@ export default function ViewLessonVideo({ route }) {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#F8FAFC" },
+  screen: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+  },
 
   content: {
     flexGrow: 1,
@@ -186,7 +290,10 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
   },
 
-  centerWrap: { alignItems: "center", justifyContent: "center" },
+  centerWrap: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
 
   titleText: {
     fontSize: 20,
@@ -218,7 +325,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#0B1220",
   },
 
-  webview: { width: "100%", height: "100%" },
+  webview: {
+    width: "100%",
+    backgroundColor: "#0B1220",
+  },
 
   playerFallback: {
     flex: 1,
@@ -226,11 +336,34 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
     backgroundColor: "#0B1220",
+    paddingHorizontal: 14,
   },
 
-  fallbackText: { color: "#FFFFFF", fontWeight: "800", fontSize: 13 },
+  fallbackText: {
+    color: "#FFFFFF",
+    fontWeight: "800",
+    fontSize: 13,
+    textAlign: "center",
+  },
 
-  actionRow: { marginTop: 10, alignItems: "flex-end" },
+  openExternalBtn: {
+    marginTop: 8,
+    backgroundColor: "#214294",
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 10,
+  },
+
+  openExternalBtnText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+
+  actionRow: {
+    marginTop: 10,
+    alignItems: "flex-end",
+  },
 
   fullBtn: {
     height: 34,
@@ -244,9 +377,16 @@ const styles = StyleSheet.create({
     gap: 6,
   },
 
-  fullBtnPressed: { opacity: 0.95, transform: [{ scale: 0.985 }] },
+  fullBtnPressed: {
+    opacity: 0.95,
+    transform: [{ scale: 0.985 }],
+  },
 
-  fullBtnText: { color: "#FFFFFF", fontSize: 12, fontWeight: "800" },
+  fullBtnText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "800",
+  },
 
   helperText: {
     marginTop: 10,
@@ -257,13 +397,15 @@ const styles = StyleSheet.create({
     lineHeight: 17,
   },
 
-  // ✅ use Unicode Sinhala font only for this helper line
   helperTextSi: {
     fontFamily: "AbhayaLibre_700Bold",
     fontWeight: "normal",
   },
 
-  fullScreenWrap: { flex: 1, backgroundColor: "#020617" },
+  fullScreenWrap: {
+    flex: 1,
+    backgroundColor: "#020617",
+  },
 
   fullHeader: {
     paddingHorizontal: 16,
@@ -295,7 +437,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-  closeBtnPressed: { opacity: 0.9 },
+  closeBtnPressed: {
+    opacity: 0.9,
+  },
 
   fullPlayerArea: {
     flex: 1,

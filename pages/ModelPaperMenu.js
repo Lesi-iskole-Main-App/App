@@ -1,6 +1,3 @@
-// pages/ModelPaperMenu.js ✅ FULL FILE
-// same logic as DailyQuizMenu
-
 import React, { useMemo, useCallback, useState } from "react";
 import {
   View,
@@ -34,10 +31,7 @@ const PaymentBadge = ({ payment, amount, T, isSi, sinFont }) => {
   const bg = isPaid ? "#FEE2E2" : isPractice ? "#FEF3C7" : "#DCFCE7";
   const text = isPaid ? "#991B1B" : isPractice ? "#92400E" : "#166534";
 
-  // ✅ Paid label must stay English (do NOT translate "Pay" or "Rs")
   const paidLabel = `Pay • Rs ${Number(amount || 0)}`;
-
-  // ✅ Only translate practise/free
   const label = isPaid ? paidLabel : isPractice ? T.practise : T.free;
 
   return (
@@ -46,7 +40,6 @@ const PaymentBadge = ({ payment, amount, T, isSi, sinFont }) => {
         style={[
           styles.badgeText,
           { color: text },
-          // ✅ Sinhala font only for practise/free
           !isPaid && isSi ? sinFont("bold") : null,
         ]}
       >

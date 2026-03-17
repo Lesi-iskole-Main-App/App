@@ -1,16 +1,12 @@
-// pages/TopicWise.js ✅ FULL FILE
-// ✅ same structure as DailyQuiz selector page, but navigates to TopicWiseMenu
-
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { View, Text, StyleSheet, Pressable, ActivityIndicator } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { useNavigation } from "@react-navigation/native";
 
 import useUser from "../app/hooks/useUser";
-import { useGetGradeDetailQuery } from "../app/gradeApi";
+import { useGetPublishedPaperSubjectsQuery } from "../app/paperApi";
 import useT from "../app/i18n/useT";
 
-const norm = (v) => String(v || "").trim().toLowerCase();
 const TAB_BAR_SPACE = 110;
 
 export default function TopicWise() {
@@ -26,23 +22,70 @@ export default function TopicWise() {
   const stream = user?.selectedStream || null;
 
   const isAL = gradeNumber === 12 || gradeNumber === 13 || level === "al";
+  const canFetchSubjects = !!gradeNumber && (!isAL || !!stream);
 
-  const { data: gradeDoc, isLoading, isFetching, error } =
-    useGetGradeDetailQuery(gradeNumber, { skip: !gradeNumber });
+  const {
+    data: publishedSubjects = [],
+    isLoading,
+    isFetching,
+    error,
+  } = useGetPublishedPaperSubjectsQuery(
+    {
+      gradeNumber,
+      paperType: "Topic wise paper",
+      stream: isAL ? stream : null,
+    },
+    { skip: !canFetchSubjects }
+  );
 
   const subjectsToShow = useMemo(() => {
-    if (!gradeDoc) return [];
+    return Array.isArray(publishedSubjects)
+      ? publishedSubjects
+          .map((item) => {
+            if (!item) return null;
 
-    if (!isAL) {
-      const list = Array.isArray(gradeDoc?.subjects) ? gradeDoc.subjects : [];
-      return list.map((x) => x?.subject).filter(Boolean);
+            if (typeof item === "string") {
+              const subject = String(item).trim();
+              return subject
+                ? {
+                    _id: subject,
+                    subject,
+                  }
+                : null;
+            }
+
+            if (typeof item === "object") {
+              const subject = String(item.subject || "").trim();
+              const _id = String(item._id || subject || "").trim();
+
+              if (!subject) return null;
+
+              return {
+                _id,
+                subject,
+              };
+            }
+
+            return null;
+          })
+          .filter(Boolean)
+      : [];
+  }, [publishedSubjects]);
+
+  useEffect(() => {
+    if (!subjectsToShow.length) {
+      setSelectedSubject("");
+      return;
     }
 
-    const streams = Array.isArray(gradeDoc?.streams) ? gradeDoc.streams : [];
-    const st = streams.find((s) => norm(s?.stream) === norm(stream));
-    const subs = Array.isArray(st?.subjects) ? st.subjects : [];
-    return subs.map((x) => x?.subject).filter(Boolean);
-  }, [gradeDoc, isAL, stream]);
+    const exists = subjectsToShow.some(
+      (item) => String(item.subject) === String(selectedSubject)
+    );
+
+    if (!exists) {
+      setSelectedSubject("");
+    }
+  }, [subjectsToShow, selectedSubject]);
 
   const canStart = !!gradeNumber && !!selectedSubject && (!isAL || !!stream);
 
@@ -53,6 +96,8 @@ export default function TopicWise() {
     stream: isSi ? t("streamLbl") : "Stream",
     subject: isSi ? t("subjectLbl") : "Subject",
     continue: isSi ? t("continueLbl") : "Continue",
+    noAvailableSubjects: isSi ? "විෂයයන් නොමැත" : "No available subjects",
+    loadingSubjects: isSi ? "විෂයයන් පූරණය වෙමින්..." : "Loading subjects...",
   };
 
   const onContinue = () => {
@@ -88,28 +133,16 @@ export default function TopicWise() {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#2563EB" />
-        <Text style={styles.helperText}>Loading subjects...</Text>
+        <Text style={styles.helperText}>{UI.loadingSubjects}</Text>
       </View>
     );
   }
 
-  if (error || !gradeDoc) {
+  if (error) {
     return (
       <View style={styles.center}>
         <Text style={styles.title}>Subjects not available</Text>
-        <Text style={styles.helperText}>Check backend Grade data.</Text>
-      </View>
-    );
-  }
-
-  if (!subjectsToShow.length) {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.title}>No Subjects Found</Text>
-        <Text style={styles.helperText}>
-          Please add subjects in backend for grade {gradeNumber}
-          {isAL ? " and stream" : ""}.
-        </Text>
+        <Text style={styles.helperText}>Check backend published topic wise papers.</Text>
       </View>
     );
   }
@@ -118,7 +151,9 @@ export default function TopicWise() {
     <View style={styles.screen}>
       <View style={styles.card}>
         <Text style={[styles.title, isSi ? sinFont("bold") : null]}>{UI.title}</Text>
-        <Text style={[styles.subTitle, isSi ? sinFont("regular") : null]}>{UI.selectSubject}</Text>
+        <Text style={[styles.subTitle, isSi ? sinFont("regular") : null]}>
+          {UI.selectSubject}
+        </Text>
 
         <Text style={[styles.infoRow, isSi ? sinFont("regular") : null]}>
           {UI.grade} <Text style={styles.bold}>{gradeNumber}</Text>
@@ -140,12 +175,31 @@ export default function TopicWise() {
             itemStyle={styles.pickerItem}
             dropdownIconColor="#2563EB"
           >
-            <Picker.Item label="Select Subject" value="" />
+            <Picker.Item
+              label={
+                subjectsToShow.length
+                  ? UI.selectSubject
+                  : UI.noAvailableSubjects
+              }
+              value=""
+            />
             {subjectsToShow.map((sub) => (
-              <Picker.Item key={sub} label={sub} value={sub} />
+              <Picker.Item
+                key={String(sub._id)}
+                label={String(sub.subject)}
+                value={String(sub.subject)}
+              />
             ))}
           </Picker>
         </View>
+
+        {!subjectsToShow.length ? (
+          <Text style={styles.helperText}>
+            {isAL
+              ? "No available topic wise subjects for this stream."
+              : "No available topic wise subjects for this grade."}
+          </Text>
+        ) : null}
 
         <Pressable
           onPress={onContinue}
@@ -156,7 +210,9 @@ export default function TopicWise() {
             pressed && canStart && styles.pressed,
           ]}
         >
-          <Text style={[styles.startBtnText, isSi ? sinFont("bold") : null]}>{UI.continue}</Text>
+          <Text style={[styles.startBtnText, isSi ? sinFont("bold") : null]}>
+            {UI.continue}
+          </Text>
         </Pressable>
       </View>
     </View>

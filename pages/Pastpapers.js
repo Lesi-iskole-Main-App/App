@@ -1,13 +1,12 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { View, Text, StyleSheet, Pressable, ActivityIndicator } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { useNavigation } from "@react-navigation/native";
 
 import useUser from "../app/hooks/useUser";
-import { useGetGradeDetailQuery } from "../app/gradeApi";
+import { useGetPublishedPaperSubjectsQuery } from "../app/paperApi";
 import useT from "../app/i18n/useT";
 
-const norm = (v) => String(v || "").trim().toLowerCase();
 const TAB_BAR_SPACE = 110;
 
 export default function PastPapers() {
@@ -23,23 +22,70 @@ export default function PastPapers() {
   const stream = user?.selectedStream || null;
 
   const isAL = level === "al" || gradeNumber === 12 || gradeNumber === 13;
+  const canFetchSubjects = !!gradeNumber && (!isAL || !!stream);
 
-  const { data: gradeDoc, isLoading, isFetching, error } =
-    useGetGradeDetailQuery(gradeNumber, { skip: !gradeNumber });
+  const {
+    data: publishedSubjects = [],
+    isLoading,
+    isFetching,
+    error,
+  } = useGetPublishedPaperSubjectsQuery(
+    {
+      gradeNumber,
+      paperType: "Past paper",
+      stream: isAL ? stream : null,
+    },
+    { skip: !canFetchSubjects }
+  );
 
   const subjectsToShow = useMemo(() => {
-    if (!gradeDoc) return [];
+    return Array.isArray(publishedSubjects)
+      ? publishedSubjects
+          .map((item) => {
+            if (!item) return null;
 
-    if (!isAL) {
-      const list = Array.isArray(gradeDoc?.subjects) ? gradeDoc.subjects : [];
-      return list.map((x) => x?.subject).filter(Boolean);
+            if (typeof item === "string") {
+              const subject = String(item).trim();
+              if (!subject) return null;
+
+              return {
+                _id: subject,
+                subject,
+              };
+            }
+
+            if (typeof item === "object") {
+              const subject = String(item.subject || "").trim();
+              const _id = String(item._id || subject || "").trim();
+
+              if (!subject) return null;
+
+              return {
+                _id,
+                subject,
+              };
+            }
+
+            return null;
+          })
+          .filter(Boolean)
+      : [];
+  }, [publishedSubjects]);
+
+  useEffect(() => {
+    if (!subjectsToShow.length) {
+      setSelectedSubject("");
+      return;
     }
 
-    const streams = Array.isArray(gradeDoc?.streams) ? gradeDoc.streams : [];
-    const streamObj = streams.find((s) => norm(s?.stream) === norm(stream));
-    const streamSubjects = Array.isArray(streamObj?.subjects) ? streamObj.subjects : [];
-    return streamSubjects.map((x) => x?.subject).filter(Boolean);
-  }, [gradeDoc, isAL, stream]);
+    const exists = subjectsToShow.some(
+      (item) => String(item.subject) === String(selectedSubject)
+    );
+
+    if (!exists) {
+      setSelectedSubject("");
+    }
+  }, [subjectsToShow, selectedSubject]);
 
   const canStart = !!gradeNumber && !!selectedSubject && (!isAL || !!stream);
 
@@ -50,6 +96,8 @@ export default function PastPapers() {
     stream: isSi ? t("streamLbl") : "Stream",
     subject: isSi ? t("subjectLbl") : "Subject",
     continue: isSi ? t("continueLbl") : "Continue",
+    noAvailableSubjects: isSi ? "විෂයයන් නොමැත" : "No available subjects",
+    loadingSubjects: isSi ? "විෂයයන් පූරණය වෙමින්..." : "Loading subjects...",
   };
 
   const onContinue = () => {
@@ -71,7 +119,10 @@ export default function PastPapers() {
         <Text style={styles.helperText}>
           Please select your grade (and stream for A/L) first.
         </Text>
-        <Pressable style={styles.primaryBtn} onPress={() => navigation.navigate("MainSelectgrade")}>
+        <Pressable
+          style={styles.primaryBtn}
+          onPress={() => navigation.navigate("MainSelectgrade")}
+        >
           <Text style={styles.primaryBtnText}>Go to Grade Selection</Text>
         </Pressable>
       </View>
@@ -83,7 +134,10 @@ export default function PastPapers() {
       <View style={styles.center}>
         <Text style={styles.title}>Stream not selected</Text>
         <Text style={styles.helperText}>Please select your stream first.</Text>
-        <Pressable style={styles.primaryBtn} onPress={() => navigation.navigate("MainSelectgrade")}>
+        <Pressable
+          style={styles.primaryBtn}
+          onPress={() => navigation.navigate("MainSelectgrade")}
+        >
           <Text style={styles.primaryBtnText}>Go to Grade Selection</Text>
         </Pressable>
       </View>
@@ -94,27 +148,16 @@ export default function PastPapers() {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#2563EB" />
-        <Text style={styles.helperText}>Loading subjects...</Text>
+        <Text style={styles.helperText}>{UI.loadingSubjects}</Text>
       </View>
     );
   }
 
-  if (error || !gradeDoc) {
+  if (error) {
     return (
       <View style={styles.center}>
         <Text style={styles.title}>Subjects not available</Text>
-        <Text style={styles.helperText}>Please check backend Grade data.</Text>
-      </View>
-    );
-  }
-
-  if (!subjectsToShow.length) {
-    return (
-      <View style={styles.center}>
-        <Text style={styles.title}>No Subjects Found</Text>
-        <Text style={styles.helperText}>
-          Please add subjects in backend for this grade{isAL ? " / stream" : ""}.
-        </Text>
+        <Text style={styles.helperText}>Check backend published past papers.</Text>
       </View>
     );
   }
@@ -123,7 +166,9 @@ export default function PastPapers() {
     <View style={styles.screen}>
       <View style={styles.card}>
         <Text style={[styles.title, isSi ? sinFont("bold") : null]}>{UI.title}</Text>
-        <Text style={[styles.subTitle, isSi ? sinFont("regular") : null]}>{UI.selectSubject}</Text>
+        <Text style={[styles.subTitle, isSi ? sinFont("regular") : null]}>
+          {UI.selectSubject}
+        </Text>
 
         <Text style={[styles.infoRow, isSi ? sinFont("regular") : null]}>
           {UI.grade} <Text style={styles.bold}>{gradeNumber}</Text>
@@ -144,12 +189,27 @@ export default function PastPapers() {
             style={styles.picker}
             dropdownIconColor="#2563EB"
           >
-            <Picker.Item label="Select Subject" value="" />
+            <Picker.Item
+              label={subjectsToShow.length ? "Select Subject" : UI.noAvailableSubjects}
+              value=""
+            />
             {subjectsToShow.map((sub) => (
-              <Picker.Item key={sub} label={sub} value={sub} />
+              <Picker.Item
+                key={String(sub._id)}
+                label={String(sub.subject)}
+                value={String(sub.subject)}
+              />
             ))}
           </Picker>
         </View>
+
+        {!subjectsToShow.length ? (
+          <Text style={styles.helperText}>
+            {isAL
+              ? "No available past paper subjects for this stream."
+              : "No available past paper subjects for this grade."}
+          </Text>
+        ) : null}
 
         <Pressable
           onPress={onContinue}
@@ -160,7 +220,9 @@ export default function PastPapers() {
             pressed && canStart && styles.pressed,
           ]}
         >
-          <Text style={[styles.startBtnText, isSi ? sinFont("bold") : null]}>{UI.continue}</Text>
+          <Text style={[styles.startBtnText, isSi ? sinFont("bold") : null]}>
+            {UI.continue}
+          </Text>
         </Pressable>
       </View>
     </View>
@@ -190,18 +252,75 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 3,
   },
-  title: { fontSize: 20, fontWeight: "900", color: "#0F172A", textAlign: "center" },
-  subTitle: { fontSize: 13, color: "#334155", textAlign: "center", marginTop: 6, marginBottom: 14 },
-  infoRow: { fontSize: 12, fontWeight: "700", color: "#334155", textAlign: "center", marginTop: 4 },
-  bold: { fontWeight: "900", color: "#0F172A" },
-  label: { fontSize: 12, fontWeight: "800", color: "#0F172A", marginBottom: 6, marginTop: 14 },
-  pickerWrap: { borderWidth: 1, borderColor: "#CBD5E1", borderRadius: 14, overflow: "hidden", backgroundColor: "#F1F5F9" },
-  picker: { width: "100%", color: "#0F172A" },
-  startBtn: { height: 52, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: "#2563EB", marginTop: 16 },
-  startBtnDisabled: { backgroundColor: "#94A3B8" },
-  startBtnText: { color: "#FFFFFF", fontSize: 15, fontWeight: "900" },
-  pressed: { transform: [{ scale: 0.99 }], opacity: 0.92 },
-  helperText: { marginTop: 10, textAlign: "center", color: "#64748B", fontSize: 12, fontWeight: "600" },
+  title: {
+    fontSize: 20,
+    fontWeight: "900",
+    color: "#0F172A",
+    textAlign: "center",
+  },
+  subTitle: {
+    fontSize: 13,
+    color: "#334155",
+    textAlign: "center",
+    marginTop: 6,
+    marginBottom: 14,
+  },
+  infoRow: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#334155",
+    textAlign: "center",
+    marginTop: 4,
+  },
+  bold: {
+    fontWeight: "900",
+    color: "#0F172A",
+  },
+  label: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#0F172A",
+    marginBottom: 6,
+    marginTop: 14,
+  },
+  pickerWrap: {
+    borderWidth: 1,
+    borderColor: "#CBD5E1",
+    borderRadius: 14,
+    overflow: "hidden",
+    backgroundColor: "#F1F5F9",
+  },
+  picker: {
+    width: "100%",
+    color: "#0F172A",
+  },
+  startBtn: {
+    height: 52,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#2563EB",
+    marginTop: 16,
+  },
+  startBtnDisabled: {
+    backgroundColor: "#94A3B8",
+  },
+  startBtnText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "900",
+  },
+  pressed: {
+    transform: [{ scale: 0.99 }],
+    opacity: 0.92,
+  },
+  helperText: {
+    marginTop: 10,
+    textAlign: "center",
+    color: "#64748B",
+    fontSize: 12,
+    fontWeight: "600",
+  },
   center: {
     flex: 1,
     backgroundColor: "#F8FAFC",
@@ -210,6 +329,16 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: TAB_BAR_SPACE,
   },
-  primaryBtn: { marginTop: 14, backgroundColor: "#2563EB", paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12 },
-  primaryBtnText: { color: "#FFFFFF", fontWeight: "900", fontSize: 12 },
+  primaryBtn: {
+    marginTop: 14,
+    backgroundColor: "#2563EB",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  primaryBtnText: {
+    color: "#FFFFFF",
+    fontWeight: "900",
+    fontSize: 12,
+  },
 });

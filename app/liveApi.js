@@ -15,7 +15,6 @@ export const liveApi = createApi({
   }),
   tagTypes: ["Lives"],
   endpoints: (builder) => ({
-    // ✅ student dashboard live list
     getStudentLives: builder.query({
       query: () => ({
         url: "/student",
@@ -28,7 +27,6 @@ export const liveApi = createApi({
       providesTags: ["Lives"],
     }),
 
-    // ✅ all lives
     getAllLives: builder.query({
       query: () => ({
         url: "/",
@@ -41,7 +39,6 @@ export const liveApi = createApi({
       providesTags: ["Lives"],
     }),
 
-    // ✅ lives by class
     getLivesByClassId: builder.query({
       query: (classId) => ({
         url: `/class/${classId}`,
@@ -56,7 +53,6 @@ export const liveApi = createApi({
       ],
     }),
 
-    // ✅ one live
     getLiveByClassIdAndLiveId: builder.query({
       query: ({ classId, liveId }) => ({
         url: `/class/${classId}/${liveId}`,

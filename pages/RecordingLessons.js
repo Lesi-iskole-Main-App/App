@@ -15,12 +15,6 @@ import { setSelectedRecordingLesson } from "../app/features/recordingSlice";
 const PRIMARY = "#1153ec";
 const TAB_BAR_SPACE = 110;
 
-const cleanDisplayText = (value) => {
-  const raw = String(value || "").trim();
-  if (!raw) return "";
-  return raw.replace(/\s+/g, " ").trim();
-};
-
 export default function RecordingLessons({ route }) {
   const navigation = useNavigation();
   const dispatch = useDispatch();
@@ -30,6 +24,7 @@ export default function RecordingLessons({ route }) {
   const grade = route?.params?.grade || "";
   const subject = route?.params?.subject || "";
   const teacher = route?.params?.teacher || "";
+  const batchNumber = route?.params?.batchNumber || "";
 
   const {
     data: recordings = [],
@@ -37,12 +32,6 @@ export default function RecordingLessons({ route }) {
     isError,
     refetch,
   } = useGetRecordingsByClassIdQuery(classId, { skip: !classId });
-
-  const timeWithDot = (v) =>
-    String(v || "")
-      .trim()
-      .replace(/[：:ඃ]/g, ".")
-      .replace(/\s+/g, "");
 
   const sortedRecordings = useMemo(() => {
     const toMs = (dateValue, timeValue) => {
@@ -68,12 +57,13 @@ export default function RecordingLessons({ route }) {
       date: recording?.date || "",
       time: recording?.time || "",
       description: recording?.description || "",
-      recordingUrl: recording?.recordingUrl || "",
+      recordingUrl: recording?.recordingUrl || recording?.videoUrl || "",
       classId,
       className,
       grade,
       subject,
       teacher,
+      batchNumber,
     };
 
     dispatch(setSelectedRecordingLesson(payload));
@@ -83,6 +73,12 @@ export default function RecordingLessons({ route }) {
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <Text style={styles.pageTitle}>Recording Lessons</Text>
+
+      {!!batchNumber && (
+        <View style={styles.batchBanner}>
+          <Text style={styles.batchBannerText}>Batch {batchNumber}</Text>
+        </View>
+      )}
 
       {!classId ? (
         <Text style={styles.centerInfo}>Missing class</Text>
@@ -102,11 +98,10 @@ export default function RecordingLessons({ route }) {
         <Text style={styles.centerInfo}>No recordings available.</Text>
       ) : (
         sortedRecordings.map((recording, idx) => {
-          const title =
-            cleanDisplayText(recording?.title) || `Recording ${idx + 1}`;
-          const description =
-            cleanDisplayText(recording?.description) ||
-            "No description available.";
+          const title = String(recording?.title || `Recording ${idx + 1}`).trim();
+          const description = String(
+            recording?.description || "No description available."
+          ).trim();
 
           return (
             <View style={styles.card} key={recording?._id || String(idx)}>
@@ -116,6 +111,13 @@ export default function RecordingLessons({ route }) {
                 </View>
 
                 <View style={styles.metaWrap}>
+                  {!!batchNumber && (
+                    <View style={styles.metaBox}>
+                      <Text style={styles.metaLabel}>Batch</Text>
+                      <Text style={styles.metaValue}>{batchNumber}</Text>
+                    </View>
+                  )}
+
                   <View style={styles.metaBox}>
                     <Text style={styles.metaLabel}>Date</Text>
                     <Text style={styles.metaValue}>{recording?.date || "-"}</Text>
@@ -123,9 +125,7 @@ export default function RecordingLessons({ route }) {
 
                   <View style={styles.metaBox}>
                     <Text style={styles.metaLabel}>Time</Text>
-                    <Text style={styles.metaValue}>
-                      {timeWithDot(recording?.time) || "-"}
-                    </Text>
+                    <Text style={styles.metaValue}>{recording?.time || "-"}</Text>
                   </View>
                 </View>
               </View>
@@ -179,7 +179,24 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     color: PRIMARY,
     textAlign: "center",
-    marginBottom: 15,
+    marginBottom: 10,
+  },
+
+  batchBanner: {
+    alignSelf: "center",
+    backgroundColor: "#EEF4FF",
+    borderWidth: 1,
+    borderColor: "#D7E5FF",
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    marginBottom: 12,
+  },
+
+  batchBannerText: {
+    color: PRIMARY,
+    fontSize: 12,
+    fontWeight: "800",
   },
 
   stateWrap: {
@@ -225,11 +242,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderWidth: 1,
     borderColor: "#E2E8F0",
-    shadowColor: "#0F172A",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
   },
 
   headerRow: {
@@ -255,6 +267,8 @@ const styles = StyleSheet.create({
   metaWrap: {
     flexDirection: "row",
     gap: 6,
+    flexWrap: "wrap",
+    justifyContent: "flex-end",
   },
 
   metaBox: {

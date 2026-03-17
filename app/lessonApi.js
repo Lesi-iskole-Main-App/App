@@ -20,28 +20,16 @@ export const lessonApi = createApi({
         url: `/class/${classId}`,
         method: "GET",
       }),
-      transformResponse: (res) => {
-        if (Array.isArray(res?.lessons)) return res.lessons;
-        return [];
-      },
-      providesTags: ["Lessons"],
-    }),
-
-    getPublicDemoLessonsByClassId: builder.query({
-      query: (classId) => ({
-        url: `/public/class/${classId}`,
-        method: "GET",
+      transformResponse: (res) => ({
+        lessons: Array.isArray(res?.lessons) ? res.lessons : [],
+        access: String(res?.access || "full").toLowerCase(),
+        message: String(res?.message || ""),
       }),
-      transformResponse: (res) => {
-        if (Array.isArray(res?.lessons)) return res.lessons;
-        return [];
-      },
-      providesTags: ["Lessons"],
+      providesTags: (result, error, classId) => [
+        { type: "Lessons", id: String(classId) },
+      ],
     }),
   }),
 });
 
-export const {
-  useGetLessonsByClassIdQuery,
-  useGetPublicDemoLessonsByClassIdQuery,
-} = lessonApi;
+export const { useGetLessonsByClassIdQuery } = lessonApi;

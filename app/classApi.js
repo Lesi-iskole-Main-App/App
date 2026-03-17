@@ -13,12 +13,19 @@ export const classApi = createApi({
     },
     credentials: "include",
   }),
+  tagTypes: ["Class"],
   endpoints: (builder) => ({
     getClassesByGradeAndSubject: builder.query({
       query: ({ gradeNumber, subjectName = "", streamName = "" }) => {
         const params = new URLSearchParams();
 
-        params.set("gradeNumber", String(gradeNumber));
+        if (
+          gradeNumber !== undefined &&
+          gradeNumber !== null &&
+          String(gradeNumber).trim() !== ""
+        ) {
+          params.set("gradeNumber", String(gradeNumber));
+        }
 
         if (String(subjectName || "").trim()) {
           params.set("subjectName", String(subjectName).trim());
@@ -37,6 +44,7 @@ export const classApi = createApi({
         if (Array.isArray(res?.classes)) return res.classes;
         return [];
       },
+      providesTags: ["Class"],
     }),
   }),
 });

@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   ScrollView,
+  Alert,
 } from "react-native";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 
@@ -19,10 +20,27 @@ import {
 } from "../app/enrollApi";
 import ClassEnrollCard from "../components/ClassEnrollCard";
 
+const SL_PHONE_REGEX = /^(?:\+94|0)?7\d{8}$/;
+
 const numberFromGrade = (gradeLabel) => {
   if (!gradeLabel) return null;
   const match = String(gradeLabel).match(/\d+/);
   return match ? parseInt(match[0], 10) : null;
+};
+
+const normalizePhone = (value) => {
+  const raw = String(value || "").replace(/\s+/g, "");
+  if (!raw) return "";
+
+  if (raw.startsWith("+94")) return raw;
+  if (raw.startsWith("94")) return `+${raw}`;
+  if (raw.startsWith("0")) return `+94${raw.slice(1)}`;
+  return raw;
+};
+
+const isValidSriLankaMobile = (value) => {
+  const raw = String(value || "").replace(/\s+/g, "");
+  return SL_PHONE_REGEX.test(raw);
 };
 
 export default function EnrollSubjects({ route }) {
@@ -46,8 +64,6 @@ export default function EnrollSubjects({ route }) {
     [gradeNumberParam, gradeLabel]
   );
 
-  const shouldSkipClasses = !gradeNo && !String(streamName || "").trim();
-
   const {
     data: classes = [],
     isLoading,
@@ -55,11 +71,11 @@ export default function EnrollSubjects({ route }) {
     refetch,
   } = useGetClassesByGradeAndSubjectQuery(
     {
-      gradeNumber: gradeNo || null,
+      gradeNumber: gradeNo || "",
       subjectName,
       streamName,
     },
-    { skip: shouldSkipClasses }
+    { skip: !gradeNo && !streamName }
   );
 
   const {
@@ -70,18 +86,22 @@ export default function EnrollSubjects({ route }) {
 
   useFocusEffect(
     useCallback(() => {
-      if (!shouldSkipClasses) refetch?.();
+      refetch?.();
       refetchMyReq?.();
-    }, [shouldSkipClasses, refetch, refetchMyReq])
+    }, [refetch, refetchMyReq])
   );
 
   const myReqMap = useMemo(() => {
     const map = {};
-    const list = myReqData?.requests || [];
+    const list = Array.isArray(myReqData?.requests) ? myReqData.requests : [];
+
     for (const r of list) {
-      const classId = String(r?.classId || r?.classDetails?.classId || "");
+      const classId = String(
+        r?.classId || r?.classDetails?._id || r?.classDetails?.classId || ""
+      );
       if (classId) map[classId] = r;
     }
+
     return map;
   }, [myReqData]);
 
@@ -97,22 +117,38 @@ export default function EnrollSubjects({ route }) {
   const submitEnroll = async () => {
     try {
       if (!selectedClass?._id) return;
-      if (!studentName.trim()) return alert("Enter student name");
-      if (!studentPhone.trim()) return alert("Enter phone number");
+
+      if (!studentName.trim()) {
+        Alert.alert("Error", "Enter student name");
+        return;
+      }
+
+      if (!studentPhone.trim()) {
+        Alert.alert("Error", "Enter phone number");
+        return;
+      }
+
+      if (!isValidSriLankaMobile(studentPhone)) {
+        Alert.alert("Error", "Enter valid Sri Lanka mobile number");
+        return;
+      }
 
       await requestEnroll({
         classId: selectedClass._id,
         studentName: studentName.trim(),
-        studentPhone: studentPhone.trim(),
+        studentPhone: normalizePhone(studentPhone),
       }).unwrap();
 
       setModalOpen(false);
       setSelectedClass(null);
       refetchMyReq?.();
       refetch?.();
-      alert("Request sent!");
+      Alert.alert("Success", "Request sent!");
     } catch (e) {
-      alert(String(e?.data?.message || e?.error || "Request failed"));
+      Alert.alert(
+        "Error",
+        String(e?.data?.message || e?.error || "Request failed")
+      );
     }
   };
 
@@ -124,9 +160,13 @@ export default function EnrollSubjects({ route }) {
       classId: cls._id,
       className: cls.className,
       grade: gradeLabel,
+      gradeNumber: gradeNo || "",
       subject: cls?.subjectName || subjectName || "",
-      teacher: "",
-      streamName: streamName || "",
+      teacher: Array.isArray(cls?.teachers)
+        ? cls.teachers.map((t) => t?.name).filter(Boolean).join(", ")
+        : "",
+      streamName: streamName || cls?.streamName || "",
+      batchNumber: cls?.batchNumber || cls?.batch || "",
       enrollStatus: status,
       demoOnly: true,
     });
@@ -140,24 +180,23 @@ export default function EnrollSubjects({ route }) {
       classId: cls._id,
       className: cls.className,
       grade: gradeLabel,
+      gradeNumber: gradeNo || "",
       subject: cls?.subjectName || subjectName || "",
-      teacher: "",
-      streamName: streamName || "",
+      teacher: Array.isArray(cls?.teachers)
+        ? cls.teachers.map((t) => t?.name).filter(Boolean).join(", ")
+        : "",
+      streamName: streamName || cls?.streamName || "",
+      batchNumber: cls?.batchNumber || cls?.batch || "",
       enrollStatus: status,
       demoOnly: false,
     });
   };
 
-  const shouldCenterCards =
-    Array.isArray(classes) && classes.length > 0 && classes.length <= 3;
-
   return (
     <View style={styles.screen}>
       {isLoading ? (
         <View style={styles.stateWrap}>
-          <View style={styles.loaderBox}>
-            <ActivityIndicator size="small" color="#214294" />
-          </View>
+          <ActivityIndicator size="small" color="#214294" />
           <Text style={styles.infoText}>Loading classes...</Text>
         </View>
       ) : isError ? (
@@ -176,29 +215,30 @@ export default function EnrollSubjects({ route }) {
       ) : (
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={[
-            styles.scrollContent,
-            shouldCenterCards && styles.scrollCentered,
-          ]}
+          contentContainerStyle={styles.scrollContent}
         >
           {classes.map((c, index) => {
             const req = myReqMap[String(c._id)];
-            const status = req?.status || "";
+            const status = String(req?.status || "").toLowerCase();
+
+            const teacherNames = Array.isArray(c?.teachers)
+              ? c.teachers.map((t) => t?.name).filter(Boolean).join(", ")
+              : "";
 
             const normalizedItem = {
               ...c,
               className: c?.className || "Class",
-              teacherName: "",
-              teacher: "",
-              image: c?.imageUrl || "",
-              imageUrl: c?.imageUrl || "",
+              teacherName: teacherNames,
+              teacher: teacherNames,
+              image: c?.imageUrl || c?.image || "",
+              imageUrl: c?.imageUrl || c?.image || "",
+              batchNumber: c?.batchNumber || c?.batch || "",
             };
 
             return (
               <ClassEnrollCard
-                key={c._id}
+                key={c._id || String(index)}
                 item={normalizedItem}
-                index={index}
                 status={
                   status === "approved"
                     ? "approved"
@@ -217,11 +257,7 @@ export default function EnrollSubjects({ route }) {
             <View style={styles.emptyCard}>
               <Text style={styles.emptyTitle}>No classes available</Text>
               <Text style={styles.centerInfo}>
-                {streamName
-                  ? `No classes available for ${streamName}.`
-                  : gradeNo
-                  ? "No classes available for this grade."
-                  : "No classes available."}
+                No classes available for this selection.
               </Text>
             </View>
           )}
@@ -231,18 +267,16 @@ export default function EnrollSubjects({ route }) {
       <Modal visible={modalOpen} transparent animationType="fade">
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
-            <View style={styles.modalBadge}>
-              <Text style={styles.modalBadgeText}>Enroll</Text>
-            </View>
-
             <Text style={styles.modalTitle}>Enroll Request</Text>
-
-            <Text style={styles.modalText}>
-              Send a request to join this class.
-            </Text>
 
             {!!selectedClass?.className && (
               <Text style={styles.modalClassText}>{selectedClass.className}</Text>
+            )}
+
+            {!!selectedClass?.batchNumber && (
+              <Text style={styles.modalBatchText}>
+                Batch {selectedClass.batchNumber}
+              </Text>
             )}
 
             <TextInput
@@ -256,7 +290,7 @@ export default function EnrollSubjects({ route }) {
             <TextInput
               value={studentPhone}
               onChangeText={setStudentPhone}
-              placeholder="Phone Number"
+              placeholder="Sri Lanka Mobile Number"
               placeholderTextColor="#94A3B8"
               keyboardType="phone-pad"
               style={styles.input}
@@ -309,22 +343,6 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
 
-  loaderBox: {
-    width: 50,
-    height: 50,
-    borderRadius: 16,
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#0F172A",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-
   retryWrap: {
     marginTop: 12,
     backgroundColor: "#EAF1FF",
@@ -337,11 +355,6 @@ const styles = StyleSheet.create({
 
   scrollContent: {
     paddingBottom: 22,
-  },
-
-  scrollCentered: {
-    flexGrow: 1,
-    justifyContent: "center",
   },
 
   infoText: {
@@ -371,11 +384,6 @@ const styles = StyleSheet.create({
     paddingVertical: 26,
     paddingHorizontal: 18,
     alignItems: "center",
-    shadowColor: "#0F172A",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 2,
   },
 
   emptyTitle: {
@@ -410,26 +418,6 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
     borderWidth: 1,
     borderColor: "#E2E8F0",
-    shadowColor: "#0F172A",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 4,
-  },
-
-  modalBadge: {
-    alignSelf: "center",
-    backgroundColor: "#EEF4FF",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    marginBottom: 10,
-  },
-
-  modalBadgeText: {
-    color: "#214294",
-    fontSize: 11,
-    fontWeight: "700",
   },
 
   modalTitle: {
@@ -439,22 +427,20 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
-  modalText: {
-    marginTop: 8,
-    fontSize: 13,
-    fontWeight: "500",
-    color: "#64748B",
-    textAlign: "center",
-    lineHeight: 20,
-  },
-
   modalClassText: {
     marginTop: 8,
     fontSize: 14,
     fontWeight: "700",
     color: "#214294",
     textAlign: "center",
-    lineHeight: 20,
+  },
+
+  modalBatchText: {
+    marginTop: 6,
+    fontSize: 12,
+    fontWeight: "800",
+    color: "#0F172A",
+    textAlign: "center",
   },
 
   input: {

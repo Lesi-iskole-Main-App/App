@@ -9,7 +9,6 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useGetLessonsByClassIdQuery } from "../app/lessonApi";
-import { useGetMyEnrollRequestsQuery } from "../app/enrollApi";
 
 const PRIMARY = "#1153ec";
 const TAB_BAR_SPACE = 110;
@@ -28,33 +27,20 @@ export default function Lessons({ route }) {
   const grade = route?.params?.grade || "";
   const subject = route?.params?.subject || "";
   const teacher = route?.params?.teacher || "";
-  const routeEnrollStatus = String(route?.params?.enrollStatus || "").toLowerCase();
-  const demoOnly = !!route?.params?.demoOnly;
+  const streamName = route?.params?.streamName || "";
 
   const {
-    data: lessons = [],
+    data,
     isLoading,
     isError,
     refetch,
   } = useGetLessonsByClassIdQuery(classId, { skip: !classId });
 
-  const {
-    data: myReqData,
-    isLoading: reqLoading,
-  } = useGetMyEnrollRequestsQuery();
+  const lessons = useMemo(() => {
+    return Array.isArray(data?.lessons) ? data.lessons : [];
+  }, [data]);
 
-  const currentEnrollStatus = useMemo(() => {
-    if (routeEnrollStatus) return routeEnrollStatus;
-
-    const list = myReqData?.requests || [];
-    const found = list.find(
-      (r) => String(r?.classId || r?.classDetails?.classId || "") === String(classId)
-    );
-
-    return String(found?.status || "").toLowerCase();
-  }, [routeEnrollStatus, myReqData, classId]);
-
-  const isApproved = currentEnrollStatus === "approved";
+  const backendAccess = String(data?.access || "").toLowerCase();
 
   const timeWithDot = (v) =>
     String(v || "")
@@ -63,31 +49,24 @@ export default function Lessons({ route }) {
       .replace(/\s+/g, "");
 
   const sortedLessons = useMemo(() => {
-    const toMs = (d) => {
-      const dt = new Date(String(d || "").trim());
+    const toMs = (dateValue, timeValue) => {
+      const dt = new Date(
+        `${String(dateValue || "").trim()} ${String(timeValue || "").trim()}`
+      );
       const ms = dt.getTime();
       return Number.isFinite(ms) ? ms : 0;
     };
 
-    return [...(lessons || [])].sort((a, b) => {
-      const da = toMs(a?.date);
-      const db = toMs(b?.date);
-      if (da !== db) return da - db;
-
-      const ta = timeWithDot(a?.time);
-      const tb = timeWithDot(b?.time);
-      return ta.localeCompare(tb);
+    return [...lessons].sort((a, b) => {
+      const da = toMs(a?.date, a?.time);
+      const db = toMs(b?.date, b?.time);
+      return da - db;
     });
   }, [lessons]);
 
-  const visibleLessons = useMemo(() => {
-    if (isApproved && !demoOnly) return sortedLessons;
-    return sortedLessons.length > 0 ? [sortedLessons[0]] : [];
-  }, [sortedLessons, isApproved, demoOnly]);
-
   const onWatchNow = (lesson, index) => {
     navigation.navigate("ViewLesson", {
-      lessonId: lesson?._id,
+      lessonId: lesson?._id || "",
       lessonNo: index + 1,
       title: lesson?.title || "",
       date: lesson?.date || "",
@@ -99,6 +78,7 @@ export default function Lessons({ route }) {
       grade,
       subject,
       teacher,
+      streamName,
     });
   };
 
@@ -108,7 +88,7 @@ export default function Lessons({ route }) {
 
       {!classId ? (
         <Text style={styles.centerInfo}>Missing class</Text>
-      ) : isLoading || reqLoading ? (
+      ) : isLoading ? (
         <View style={styles.stateWrap}>
           <ActivityIndicator size="small" color={PRIMARY} />
           <Text style={styles.infoText}>Loading lessons...</Text>
@@ -120,11 +100,11 @@ export default function Lessons({ route }) {
             <Text style={styles.tryAgain}>Try again</Text>
           </Pressable>
         </View>
-      ) : visibleLessons.length === 0 ? (
+      ) : sortedLessons.length === 0 ? (
         <Text style={styles.centerInfo}>No lessons available.</Text>
       ) : (
         <>
-          {!isApproved && (
+          {backendAccess === "demo" && (
             <View style={styles.demoNoteCard}>
               <Text style={styles.demoNoteTitle}>Demo Lesson</Text>
               <Text style={styles.demoNoteText}>
@@ -134,10 +114,11 @@ export default function Lessons({ route }) {
             </View>
           )}
 
-          {visibleLessons.map((lesson, idx) => {
+          {sortedLessons.map((lesson, idx) => {
             const lessonTitle =
               cleanDisplayText(lesson?.title) ||
-              `${!isApproved ? "Demo Lesson" : "Lesson"} ${idx + 1}`;
+              `${backendAccess === "demo" ? "Demo Lesson" : "Lesson"} ${idx + 1}`;
+
             const lessonDescription =
               cleanDisplayText(lesson?.description) || "No description available.";
 
@@ -146,7 +127,9 @@ export default function Lessons({ route }) {
                 <View style={styles.headerRow}>
                   <View style={styles.lessonBadge}>
                     <Text style={styles.lessonBadgeText}>
-                      {!isApproved ? "Demo Lesson" : `Lesson ${idx + 1}`}
+                      {backendAccess === "demo"
+                        ? "Demo Lesson"
+                        : `Lesson ${idx + 1}`}
                     </Text>
                   </View>
 
@@ -211,23 +194,28 @@ const styles = StyleSheet.create({
   },
 
   stateWrap: { paddingTop: 30, alignItems: "center" },
+
   infoText: {
     marginTop: 10,
     color: "#64748B",
     fontWeight: "600",
     fontSize: 13,
   },
+
   errTitle: {
     color: "#0F172A",
     fontWeight: "700",
     fontSize: 14,
   },
+
   retryBtn: { marginTop: 10 },
+
   tryAgain: {
     color: PRIMARY,
     fontWeight: "700",
     fontSize: 13,
   },
+
   centerInfo: {
     textAlign: "center",
     marginTop: 24,
