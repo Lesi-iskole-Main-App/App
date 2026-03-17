@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -21,24 +21,14 @@ import olstudents from "../assets/olstudents.png";
 import primarylevel from "../assets/primarylevel.png";
 
 import { useDispatch, useSelector } from "react-redux";
-import {
-  setGradeSelection,
-  clearGradeSelection,
-} from "../app/features/authSlice";
-import { setUser, updateUserFields } from "../app/features/userSlice";
+import { setGradeSelection } from "../app/features/authSlice";
+import { setGrades } from "../app/features/gradeSlice";
 
 import {
   useGetGradesQuery,
   useGetStreamsByGradeNumberQuery,
 } from "../app/gradeApi";
-import {
-  setGrades,
-  setStreamsForGrade,
-} from "../app/features/gradeSlice";
 
-import { useSaveStudentGradeSelectionMutation } from "../app/userApi";
-
-// ---------- helpers ----------
 const getGradeNumber = (g) => {
   if (Number.isFinite(Number(g?.grade))) return Number(g.grade);
   const name = g?.gradeName || g?.name || g?.title || g?.label || "";
@@ -60,16 +50,12 @@ const getStreamValue = (s) => {
   return String(s?.stream || s?.value || s?.key || "").trim();
 };
 
+const hasSubjects = (streamObj) =>
+  Array.isArray(streamObj?.subjects) && streamObj.subjects.length > 0;
+
 export default function MainSelectgrade({ navigation }) {
   const dispatch = useDispatch();
-
   const pendingPhone = useSelector((s) => s?.auth?.pendingPhone);
-  const streamsByGrade = useSelector((s) => s?.grade?.streamsByGrade || {});
-  const token = useSelector((s) => s?.auth?.token);
-  const user =
-    useSelector((s) => s?.user?.user) || useSelector((s) => s?.auth?.user);
-
-  const [saveGradeSelection] = useSaveStudentGradeSelectionMutation();
 
   const [fontsLoaded] = useAlexandria({
     Alexandria_400Regular,
@@ -128,35 +114,29 @@ export default function MainSelectgrade({ navigation }) {
 
   const alGrades = useMemo(() => {
     return activeGrades
-      .filter((g) => g._num >= 12 && g._num <= 13)
+      .filter((g) => g?.flowType === "al" || g._num >= 12)
       .sort((a, b) => a._num - b._num);
   }, [activeGrades]);
 
   const streamsForSelected = useMemo(() => {
-    if (!selectedALMode) return [];
+    let list = [];
 
-    if (Array.isArray(streamsRaw?.streams)) return streamsRaw.streams;
-    if (Array.isArray(streamsRaw)) return streamsRaw;
+    if (Array.isArray(streamsRaw?.streams)) list = streamsRaw.streams;
+    else if (Array.isArray(streamsRaw)) list = streamsRaw;
 
-    return streamsByGrade?.al || [];
-  }, [selectedALMode, streamsRaw, streamsByGrade]);
+    return list.filter(hasSubjects);
+  }, [streamsRaw]);
 
-  useEffect(() => {
+  const cachedGradesKey = useMemo(
+    () => JSON.stringify((grades || []).map((g) => `${g?._id || ""}:${g?.grade || ""}:${g?.flowType || ""}`)),
+    [grades]
+  );
+
+  React.useEffect(() => {
     if (grades.length > 0) {
       dispatch(setGrades(grades));
     }
-  }, [grades, dispatch]);
-
-  useEffect(() => {
-    if (selectedALMode && Array.isArray(streamsForSelected)) {
-      dispatch(
-        setStreamsForGrade({
-          gradeNumber: "al",
-          streams: streamsForSelected,
-        })
-      );
-    }
-  }, [selectedALMode, streamsForSelected, dispatch]);
+  }, [cachedGradesKey, dispatch]); // safe trigger only when fetched grades meaningfully change
 
   if (!fontsLoaded) {
     return (
@@ -214,50 +194,15 @@ export default function MainSelectgrade({ navigation }) {
     setSelectedALMode(false);
   };
 
-  const saveToDbIfPossible = async ({ level, gradeNumber, stream }) => {
-    try {
-      if (!token) return;
-      if (!user || user?.role !== "student") return;
-      if (user?.gradeSelectionLocked) return;
-
-      if (!gradeNumber) return;
-
-      const resp = await saveGradeSelection({
-        level,
-        gradeNumber,
-        stream: level === "al" ? stream : null,
-      }).unwrap();
-
-      if (resp?.user) {
-        dispatch(setUser(resp.user));
-        dispatch(updateUserFields(resp.user));
-      }
-
-      dispatch(clearGradeSelection());
-    } catch (e) {
-      const status = e?.status || e?.originalStatus;
-      if (status === 409) return;
-      console.log("save grade selection failed:", e);
-    }
-  };
-
-  const pickNormalGrade = async (level, gradeObj) => {
+  const pickNormalGrade = (level, gradeObj) => {
     const gradeLabel = gradeObj?._label || getGradeLabel(gradeObj);
-    const gradeNumber = gradeObj?._num || getGradeNumber(gradeObj);
 
     dispatch(setGradeSelection({ level, grade: gradeLabel, stream: null }));
     closeGradeModal();
-
-    await saveToDbIfPossible({
-      level,
-      gradeNumber,
-      stream: null,
-    });
-
     goSignin();
   };
 
-  const pickStream = async (streamObj) => {
+  const pickStream = (streamObj) => {
     const streamLabel = getStreamLabel(streamObj);
     const streamValue = getStreamValue(streamObj) || streamLabel;
 
@@ -270,13 +215,6 @@ export default function MainSelectgrade({ navigation }) {
     );
 
     closeStreamModal();
-
-    await saveToDbIfPossible({
-      level: "al",
-      gradeNumber: 12,
-      stream: streamValue,
-    });
-
     goSignin();
   };
 
@@ -286,7 +224,7 @@ export default function MainSelectgrade({ navigation }) {
       onPress={() => {
         if (level === "al") {
           if (!alGrades.length) {
-            Alert.alert("No A/L", "Backend has no A/L grades.");
+            Alert.alert("No A/L", "Backend has no A/L flow.");
             return;
           }
           openALStreams();
@@ -393,7 +331,13 @@ export default function MainSelectgrade({ navigation }) {
             {streamsLoading ? (
               <View style={{ alignItems: "center", paddingVertical: 14 }}>
                 <ActivityIndicator />
-                <Text style={{ marginTop: 10, color: "#64748B", fontWeight: "700" }}>
+                <Text
+                  style={{
+                    marginTop: 10,
+                    color: "#64748B",
+                    fontWeight: "700",
+                  }}
+                >
                   Loading streams...
                 </Text>
               </View>

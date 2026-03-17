@@ -67,7 +67,11 @@ const SRI_LANKA_DISTRICTS = [
 ];
 
 const parseGradeNumber = (gradeLabel) => {
-  const m = String(gradeLabel || "").match(/(\d{1,2})/);
+  const raw = String(gradeLabel || "").trim().toLowerCase();
+
+  if (raw === "a/l" || raw === "al") return 12;
+
+  const m = raw.match(/(\d{1,2})/);
   return m ? Number(m[1]) : null;
 };
 
@@ -84,14 +88,18 @@ const makeSafeDate = (y, m, d) => {
   const mm = Number(m);
   const dd = Number(d);
   if (!yy || !mm || !dd) return null;
+
   const dt = new Date(yy, mm - 1, dd);
   if (Number.isNaN(dt.getTime())) return null;
+
   if (
     dt.getFullYear() !== yy ||
     dt.getMonth() !== mm - 1 ||
     dt.getDate() !== dd
-  )
+  ) {
     return null;
+  }
+
   return dt;
 };
 
@@ -151,23 +159,25 @@ export default function Sign({ navigation, route }) {
 
   const trySaveSelectionOnce = async (userFromLogin) => {
     if (userFromLogin?.role !== "student") return;
-    if (userFromLogin?.gradeSelectionLocked) return;
 
-    const gNum = parseGradeNumber(selectedGrade);
-    if (!selectedLevel || !gNum) return;
+    if (!selectedLevel) return;
+
+    const isAL = selectedLevel === "al";
+    const gNum = isAL ? 12 : parseGradeNumber(selectedGrade);
+
+    if (!gNum) return;
+    if (isAL && !String(selectedStream || "").trim()) return;
 
     try {
       const resp = await saveGradeSelection({
         level: selectedLevel,
         gradeNumber: gNum,
-        stream: selectedLevel === "al" ? selectedStream : null,
+        stream: isAL ? selectedStream : null,
       }).unwrap();
 
       if (resp?.user) dispatch(updateUserFields(resp.user));
       dispatch(clearGradeSelection());
     } catch (e) {
-      const status = e?.status || e?.originalStatus;
-      if (status === 409) return;
       console.log("save grade selection failed:", e);
     }
   };
@@ -238,7 +248,7 @@ export default function Sign({ navigation, route }) {
           })
         );
 
-        Alert.alert("OTP Sent", "We sent OTP to your WhatsApp and SMS.");
+        Alert.alert("OTP Sent", "We sent OTP to your WhatsApp.");
 
         navigation.navigate("OTP", {
           phone: payload.whatsappnumber,
@@ -250,6 +260,7 @@ export default function Sign({ navigation, route }) {
       const loginPayload = {
         whatsappnumber: phoneIn.trim(),
         password: passwordIn,
+        clientType: "student_app",
       };
 
       const res = await signin(loginPayload).unwrap();
@@ -307,7 +318,10 @@ export default function Sign({ navigation, route }) {
 
     const Item = ({ value, setValue, list }) => (
       <View style={styles.webPickerCol}>
-        <ScrollView style={{ maxHeight: 220 }} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={{ maxHeight: 220 }}
+          showsVerticalScrollIndicator={false}
+        >
           {list.map((v) => {
             const active = String(value) === String(v);
             return (
@@ -316,9 +330,7 @@ export default function Sign({ navigation, route }) {
                 style={[styles.webPickItem, active && styles.webPickItemActive]}
                 onPress={() => setValue(v)}
               >
-                <Text style={[styles.webPickText, sinFont("bold")]}>
-                  {v}
-                </Text>
+                <Text style={[styles.webPickText, sinFont("bold")]}>{v}</Text>
               </Pressable>
             );
           })}
@@ -358,7 +370,10 @@ export default function Sign({ navigation, route }) {
                 onPress={() => {
                   const dt = makeSafeDate(webY, webM, webD);
                   if (!dt) {
-                    Alert.alert("Invalid date", "Please select a valid birthday.");
+                    Alert.alert(
+                      "Invalid date",
+                      "Please select a valid birthday."
+                    );
                     return;
                   }
                   setBirthday(dt);
@@ -385,7 +400,10 @@ export default function Sign({ navigation, route }) {
             {t("selectDistrict")}
           </Text>
 
-          <ScrollView style={{ maxHeight: 420 }} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={{ maxHeight: 420 }}
+            showsVerticalScrollIndicator={false}
+          >
             {SRI_LANKA_DISTRICTS.map((d) => (
               <Pressable
                 key={d}
@@ -468,7 +486,14 @@ export default function Sign({ navigation, route }) {
 
             <Pressable onPress={onContinue} style={styles.gradientBtnOuter}>
               <LinearGradient
-                colors={["#086DFF", "#5E9FFD", "#7DB1FC", "#62C4F6", "#48D7F0", "#C7F4F8"]}
+                colors={[
+                  "#086DFF",
+                  "#5E9FFD",
+                  "#7DB1FC",
+                  "#62C4F6",
+                  "#48D7F0",
+                  "#C7F4F8",
+                ]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.gradientBtn}
@@ -500,16 +525,30 @@ export default function Sign({ navigation, route }) {
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
       >
-        <Image source={lesiiskole_logo} style={styles.logo} resizeMode="contain" />
+        <Image
+          source={lesiiskole_logo}
+          style={styles.logo}
+          resizeMode="contain"
+        />
         <Text style={[styles.welcome, sinFont("bold")]}>{t("welcome")}</Text>
 
         <View style={styles.toggleContainer}>
-          <Pressable onPress={() => setMode("signup")} style={toggleBtnStyle(true)}>
-            <Text style={[...toggleTextStyle(true), sinFont()]}>{t("signUp")}</Text>
+          <Pressable
+            onPress={() => setMode("signup")}
+            style={toggleBtnStyle(true)}
+          >
+            <Text style={[...toggleTextStyle(true), sinFont()]}>
+              {t("signUp")}
+            </Text>
           </Pressable>
 
-          <Pressable onPress={() => setMode("signin")} style={toggleBtnStyle(false)}>
-            <Text style={[...toggleTextStyle(false), sinFont()]}>{t("signIn")}</Text>
+          <Pressable
+            onPress={() => setMode("signin")}
+            style={toggleBtnStyle(false)}
+          >
+            <Text style={[...toggleTextStyle(false), sinFont()]}>
+              {t("signIn")}
+            </Text>
           </Pressable>
         </View>
 
@@ -604,7 +643,14 @@ export default function Sign({ navigation, route }) {
 
           <Pressable onPress={onContinue} style={styles.gradientBtnOuter}>
             <LinearGradient
-              colors={["#086DFF", "#5E9FFD", "#7DB1FC", "#62C4F6", "#48D7F0", "#C7F4F8"]}
+              colors={[
+                "#086DFF",
+                "#5E9FFD",
+                "#7DB1FC",
+                "#62C4F6",
+                "#48D7F0",
+                "#C7F4F8",
+              ]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.gradientBtn}
