@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useGetLessonsByClassIdQuery } from "../app/lessonApi";
+import useT from "../app/i18n/useT";
 
 const PRIMARY = "#1153ec";
 const TAB_BAR_SPACE = 110;
@@ -21,6 +22,7 @@ const cleanDisplayText = (value) => {
 
 export default function Lessons({ route }) {
   const navigation = useNavigation();
+  const { t, lang, sinFont } = useT();
 
   const classId = route?.params?.classId || "";
   const className = route?.params?.className || "";
@@ -64,6 +66,9 @@ export default function Lessons({ route }) {
     });
   }, [lessons]);
 
+  const labelFontRegular = lang === "si" ? sinFont("regular") : {};
+  const labelFontBold = lang === "si" ? sinFont("bold") : {};
+
   const onWatchNow = (lesson, index) => {
     navigation.navigate("ViewLesson", {
       lessonId: lesson?._id || "",
@@ -84,7 +89,7 @@ export default function Lessons({ route }) {
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <Text style={styles.pageTitle}>Lessons</Text>
+      <Text style={[styles.pageTitle, labelFontBold]}>{t("lessonsTitle")}</Text>
 
       {!classId ? (
         <Text style={styles.centerInfo}>Missing class</Text>
@@ -106,7 +111,9 @@ export default function Lessons({ route }) {
         <>
           {backendAccess === "demo" && (
             <View style={styles.demoNoteCard}>
-              <Text style={styles.demoNoteTitle}>Demo Lesson</Text>
+              <Text style={[styles.demoNoteTitle, labelFontBold]}>
+                {t("demoLesson")}
+              </Text>
               <Text style={styles.demoNoteText}>
                 This class currently shows only the first lesson as demo.
                 After enrollment approval, all lessons will be visible.
@@ -117,7 +124,9 @@ export default function Lessons({ route }) {
           {sortedLessons.map((lesson, idx) => {
             const lessonTitle =
               cleanDisplayText(lesson?.title) ||
-              `${backendAccess === "demo" ? "Demo Lesson" : "Lesson"} ${idx + 1}`;
+              `${
+                backendAccess === "demo" ? t("demoLesson") : t("lessonWord")
+              } ${idx + 1}`;
 
             const lessonDescription =
               cleanDisplayText(lesson?.description) || "No description available.";
@@ -126,21 +135,25 @@ export default function Lessons({ route }) {
               <View style={styles.card} key={lesson?._id || String(idx)}>
                 <View style={styles.headerRow}>
                   <View style={styles.lessonBadge}>
-                    <Text style={styles.lessonBadgeText}>
+                    <Text style={[styles.lessonBadgeText, labelFontBold]}>
                       {backendAccess === "demo"
-                        ? "Demo Lesson"
-                        : `Lesson ${idx + 1}`}
+                        ? t("demoLesson")
+                        : `${t("lessonWord")} ${idx + 1}`}
                     </Text>
                   </View>
 
                   <View style={styles.metaWrap}>
                     <View style={styles.metaBox}>
-                      <Text style={styles.metaLabel}>Date</Text>
+                      <Text style={[styles.metaLabel, labelFontRegular]}>
+                        {t("dateShort")}
+                      </Text>
                       <Text style={styles.metaValue}>{lesson?.date || "-"}</Text>
                     </View>
 
                     <View style={styles.metaBox}>
-                      <Text style={styles.metaLabel}>Time</Text>
+                      <Text style={[styles.metaLabel, labelFontRegular]}>
+                        {t("timeShort")}
+                      </Text>
                       <Text style={styles.metaValue}>
                         {timeWithDot(lesson?.time) || "-"}
                       </Text>
@@ -155,7 +168,9 @@ export default function Lessons({ route }) {
                 <View style={styles.divider} />
 
                 <View style={styles.descCard}>
-                  <Text style={styles.descLabel}>Description</Text>
+                  <Text style={[styles.descLabel, labelFontBold]}>
+                    {t("descriptionShort")}
+                  </Text>
                   <Text style={styles.descText} numberOfLines={3}>
                     {lessonDescription}
                   </Text>
@@ -169,7 +184,9 @@ export default function Lessons({ route }) {
                     ]}
                     onPress={() => onWatchNow(lesson, idx)}
                   >
-                    <Text style={styles.watchText}>Watch Now</Text>
+                    <Text style={[styles.watchText, labelFontBold]}>
+                      {t("watchNowShort")}
+                    </Text>
                   </Pressable>
                 </View>
               </View>

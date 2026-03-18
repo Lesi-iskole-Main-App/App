@@ -7,6 +7,7 @@ import {
   Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import useT from "../app/i18n/useT";
 
 const PRIMARY = "#214294";
 
@@ -31,27 +32,34 @@ export default function ClassEnrollCard({
   onPressEnroll,
   onPressDemo,
 }) {
+  const { t, sinFont } = useT();
+
   const canView = status === "approved";
   const isPending = status === "pending";
 
   const imageSource = getImageSource(item);
+
+  // keep backend values as-is
   const className = String(item?.className || "Class");
   const teacherName = String(item?.teacherName || item?.teacher || "").trim();
   const batchNumber = String(
     item?.batchNumber || item?.batch || item?.classDetails?.batchNumber || ""
   ).trim();
 
+  // translate only labels
   const statusLabel = canView
-    ? "Approved"
+    ? t("statusApproved")
     : isPending
-    ? "Pending"
-    : "Available";
+    ? t("statusPending")
+    : t("statusAvailable");
 
   const actionText = canView
-    ? "View Lessons"
+    ? t("viewLessons")
     : isPending
-    ? "Request Pending"
-    : "Enroll Now";
+    ? t("requestPending")
+    : t("enrollNow");
+
+  const demoText = t("demoLesson");
 
   return (
     <View style={styles.card}>
@@ -59,7 +67,11 @@ export default function ClassEnrollCard({
         <View style={styles.leftSection}>
           <View style={styles.thumbWrap}>
             {imageSource ? (
-              <Image source={imageSource} style={styles.image} resizeMode="cover" />
+              <Image
+                source={imageSource}
+                style={styles.image}
+                resizeMode="cover"
+              />
             ) : (
               <View style={styles.imageFallback}>
                 <Ionicons name="school-outline" size={22} color={PRIMARY} />
@@ -81,6 +93,7 @@ export default function ClassEnrollCard({
               <Text
                 style={[
                   styles.statusText,
+                  sinFont("bold"),
                   canView
                     ? styles.statusApprovedText
                     : isPending
@@ -92,13 +105,15 @@ export default function ClassEnrollCard({
               </Text>
             </View>
 
-            <Text style={styles.className} numberOfLines={2}>
+            <Text style={[styles.className]} numberOfLines={2}>
               {className}
             </Text>
 
             {!!batchNumber && (
               <View style={styles.batchPill}>
-                <Text style={styles.batchPillText}>Batch {batchNumber}</Text>
+                <Text style={[styles.batchPillText]}>
+                  {t("batch")} {batchNumber}
+                </Text>
               </View>
             )}
 
@@ -109,7 +124,7 @@ export default function ClassEnrollCard({
                   size={14}
                   color="#64748B"
                 />
-                <Text style={styles.metaText} numberOfLines={1}>
+                <Text style={[styles.metaText, sinFont()]} numberOfLines={1}>
                   {teacherName}
                 </Text>
               </View>
@@ -128,7 +143,9 @@ export default function ClassEnrollCard({
             pressed && styles.actionPressed,
           ]}
         >
-          <Text style={styles.demoBtnText}>Demo Lesson</Text>
+          <Text style={[styles.demoBtnText, sinFont("bold")]}>
+            {demoText}
+          </Text>
           <View style={styles.demoIconChip}>
             <Ionicons name="play" size={14} color={PRIMARY} />
           </View>
@@ -147,6 +164,7 @@ export default function ClassEnrollCard({
           <Text
             style={[
               styles.actionBtnText,
+              sinFont("bold"),
               canView && styles.viewBtnText,
               isPending && styles.pendingBtnText,
             ]}

@@ -14,6 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { useGetMyApprovedClassesQuery } from "../app/enrollApi";
 import { setSelectedRecordingClass } from "../app/features/recordingSlice";
+import useT from "../app/i18n/useT";
 
 const PRIMARY = "#214294";
 const TAB_BAR_SPACE = 110;
@@ -32,6 +33,10 @@ const getImageSource = (item) => {
 export default function RecordingClasses() {
   const navigation = useNavigation();
   const dispatch = useDispatch();
+  const { t, lang, sinFont } = useT();
+
+  const labelFontRegular = lang === "si" ? sinFont("regular") : {};
+  const labelFontBold = lang === "si" ? sinFont("bold") : {};
 
   const {
     data = [],
@@ -77,18 +82,24 @@ export default function RecordingClasses() {
 
   return (
     <View style={styles.screen}>
-      <Text style={styles.pageTitle}>Recording Classes</Text>
+      <Text style={[styles.pageTitle, labelFontBold]}>
+        {t("recordingClassesTitle")}
+      </Text>
 
       {isLoading ? (
         <View style={styles.stateWrap}>
           <ActivityIndicator size="small" color={PRIMARY} />
-          <Text style={styles.infoText}>Loading approved recording classes...</Text>
+          <Text style={[styles.infoText, labelFontRegular]}>
+            {t("loadingApprovedRecordingClasses")}
+          </Text>
         </View>
       ) : isError ? (
         <View style={styles.stateWrap}>
-          <Text style={styles.errTitle}>Failed to load recording classes</Text>
+          <Text style={styles.errTitle}>
+            Failed to load recording classes
+          </Text>
           <Pressable onPress={() => refetch?.()} style={styles.retryWrap}>
-            <Text style={styles.tryAgain}>Try again</Text>
+            <Text style={[styles.tryAgain, labelFontBold]}>{t("retryBtnLbl")}</Text>
           </Pressable>
         </View>
       ) : classes.length === 0 ? (
@@ -135,7 +146,9 @@ export default function RecordingClasses() {
 
                     <View style={styles.infoWrap}>
                       <View style={styles.statusBadge}>
-                        <Text style={styles.statusText}>Approved</Text>
+                        <Text style={[styles.statusText, labelFontBold]}>
+                          {t("statusApproved")}
+                        </Text>
                       </View>
 
                       <Text style={styles.className} numberOfLines={2}>
@@ -160,7 +173,9 @@ export default function RecordingClasses() {
                     pressed && styles.actionPressed,
                   ]}
                 >
-                  <Text style={styles.actionBtnText}>View Recordings</Text>
+                  <Text style={[styles.actionBtnText, labelFontBold]}>
+                    {t("viewRecordings")}
+                  </Text>
                   <View style={styles.iconChip}>
                     <Ionicons name="play" size={14} color="#FFFFFF" />
                   </View>

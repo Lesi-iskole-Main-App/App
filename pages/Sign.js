@@ -361,7 +361,7 @@ export default function Sign({ navigation, route }) {
                 onPress={() => setBirthdayWebModal(false)}
               >
                 <Text style={[styles.webBtnTextGhost, sinFont("bold")]}>
-                  {t("close") || "Close"}
+                  {t("close")}
                 </Text>
               </Pressable>
 
@@ -380,7 +380,9 @@ export default function Sign({ navigation, route }) {
                   setBirthdayWebModal(false);
                 }}
               >
-                <Text style={[styles.webBtnText, sinFont("bold")]}>OK</Text>
+                <Text style={[styles.webBtnText, sinFont("bold")]}>
+                  {t("ok")}
+                </Text>
               </Pressable>
             </View>
           </Pressable>
