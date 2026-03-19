@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   View,
   StyleSheet,
@@ -7,18 +7,34 @@ import {
   Animated,
   Easing,
   Pressable,
+  Text,
+  ActivityIndicator,
+  Alert,
+  Platform,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import {
+  useNavigation,
+  CommonActions,
+} from "@react-navigation/native";
+import { useDispatch } from "react-redux";
 
 import lesiiskole_logo from "../assets/lesiiskole_logo.png";
+
+import { useSignoutMutation } from "../app/authApi";
+import { clearAuth } from "../app/features/authSlice";
+import { setUser } from "../app/features/userSlice";
 
 const { width } = Dimensions.get("window");
 
 export default function TopBar() {
   const navigation = useNavigation();
+  const dispatch = useDispatch();
   const t = useRef(new Animated.Value(0)).current;
+
+  const [signoutApi, { isLoading: loggingOut }] = useSignoutMutation();
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     const loop = Animated.loop(
@@ -47,16 +63,65 @@ export default function TopBar() {
     outputRange: [-180, 180],
   });
 
-  const goProfile = () => navigation.navigate("Profile");
+  const goProfile = () => {
+    navigation.navigate("Profile");
+  };
 
-  // ✅ Logout -> go Sign page (replace so user can't go back)
-  const goLogout = () => navigation.replace("Sign");
+  const doLocalLogout = () => {
+    dispatch(clearAuth());
+    dispatch(setUser(null));
+
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: "Sign", params: { mode: "signup" } }],
+      })
+    );
+  };
+
+  const runLogout = async () => {
+    if (busy || loggingOut) return;
+
+    try {
+      setBusy(true);
+      await signoutApi().unwrap();
+    } catch (e) {
+      console.log("signout api failed:", e);
+    } finally {
+      doLocalLogout();
+      setBusy(false);
+    }
+  };
+
+  const handleLogout = () => {
+    if (busy || loggingOut) return;
+
+    if (Platform.OS === "web") {
+      const ok = window.confirm("Are you sure you want to logout?");
+      if (ok) runLogout();
+      return;
+    }
+
+    Alert.alert("Logout", "Are you sure you want to logout?", [
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+      {
+        text: "Logout",
+        onPress: runLogout,
+      },
+    ]);
+  };
 
   return (
     <View style={styles.topBar}>
-      {/* Logo + glare */}
       <View style={styles.logoWrap}>
-        <Image source={lesiiskole_logo} style={styles.logo} resizeMode="contain" />
+        <Image
+          source={lesiiskole_logo}
+          style={styles.logo}
+          resizeMode="contain"
+        />
 
         <Animated.View
           pointerEvents="none"
@@ -79,14 +144,30 @@ export default function TopBar() {
         </Animated.View>
       </View>
 
-      {/* ✅ Right side buttons */}
       <View style={styles.rightActions}>
-        {/* Profile */}
         <Pressable onPress={goProfile} hitSlop={10} style={styles.iconBtn}>
           <Ionicons name="person-circle-outline" size={30} color="#1153ec" />
         </Pressable>
 
-       
+        <Pressable
+          onPress={handleLogout}
+          hitSlop={10}
+          disabled={busy || loggingOut}
+          style={({ pressed }) => [
+            styles.logoutBtn,
+            (busy || loggingOut) && styles.logoutBtnDisabled,
+            pressed && !(busy || loggingOut) ? styles.logoutBtnPressed : null,
+          ]}
+        >
+          {busy || loggingOut ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <>
+              <Ionicons name="log-out-outline" size={18} color="#FFFFFF" />
+              <Text style={styles.logoutText}>Logout</Text>
+            </>
+          )}
+        </Pressable>
       </View>
     </View>
   );
@@ -134,20 +215,43 @@ const styles = StyleSheet.create({
   rightActions: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
   },
 
   iconBtn: {
     padding: 6,
     borderRadius: 999,
+    marginRight: 8,
   },
 
   logoutBtn: {
+    minWidth: 108,
+    height: 40,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    backgroundColor: "#214294",
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: "#EEF2FF",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
+
+  logoutBtnPressed: {
+    opacity: 0.88,
+    transform: [{ scale: 0.98 }],
+  },
+
+  logoutBtnDisabled: {
+    opacity: 0.7,
+  },
+
+  logoutText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "700",
+    marginLeft: 6,
   },
 });

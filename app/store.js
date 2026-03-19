@@ -1,4 +1,16 @@
-import { configureStore } from "@reduxjs/toolkit";
+import { configureStore, combineReducers } from "@reduxjs/toolkit";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import {
+  persistStore,
+  persistReducer,
+  FLUSH,
+  REHYDRATE,
+  PAUSE,
+  PERSIST,
+  PURGE,
+  REGISTER,
+  createTransform,
+} from "redux-persist";
 
 import authReducer from "./features/authSlice";
 import userReducer from "./features/userSlice";
@@ -10,14 +22,12 @@ import reviewReducer from "./features/reviewSlice";
 
 import liveUiReducer from "./features/liveSlice";
 import paperReducer from "./features/paperSlice";
-
 import languageSelectionReducer from "./features/languageSelectionSlice";
 import rankReducer from "./features/rankSlice";
-import { rankApi } from "./rankApi";
-
 import progressReducer from "./features/progressSlice";
-import { progressApi } from "./progressApi";
 
+import { rankApi } from "./rankApi";
+import { progressApi } from "./progressApi";
 import { attemptApi } from "./attemptApi";
 import { liveApi } from "./liveApi";
 import { paperApi } from "./paperApi";
@@ -32,41 +42,84 @@ import { languageApi } from "./languageApi";
 import { recordingApi } from "./recordingApi";
 import { reviewApi } from "./reviewApi";
 
+/**
+ * Persist ONLY token from auth slice.
+ * This avoids keeping temporary signup / grade-flow values.
+ * So your grade flow remains unchanged.
+ */
+const authTransform = createTransform(
+  (inboundState) => ({
+    token: inboundState?.token || null,
+    pendingPhone: "",
+    selectedLevel: null,
+    selectedGrade: null,
+    selectedStream: null,
+    signupDistrict: "",
+  }),
+  (outboundState) => ({
+    token: outboundState?.token || null,
+    pendingPhone: "",
+    selectedLevel: null,
+    selectedGrade: null,
+    selectedStream: null,
+    signupDistrict: "",
+  }),
+  { whitelist: ["auth"] }
+);
+
+/**
+ * Persist user slice as-is.
+ * If your user slice has `user` object inside, it will restore that.
+ */
+const persistConfig = {
+  key: "root",
+  storage: AsyncStorage,
+  whitelist: ["auth", "user", "languageSelection"],
+  transforms: [authTransform],
+};
+
+const rootReducer = combineReducers({
+  auth: authReducer,
+  user: userReducer,
+  grade: gradeReducer,
+  lesson: lessonReducer,
+  enroll: enrollReducer,
+  recording: recordingReducer,
+  review: reviewReducer,
+
+  liveUi: liveUiReducer,
+  paper: paperReducer,
+  rank: rankReducer,
+  languageSelection: languageSelectionReducer,
+  progress: progressReducer,
+
+  [paymentApi.reducerPath]: paymentApi.reducer,
+  [attemptApi.reducerPath]: attemptApi.reducer,
+  [authApi.reducerPath]: authApi.reducer,
+  [gradeApi.reducerPath]: gradeApi.reducer,
+  [userApi.reducerPath]: userApi.reducer,
+  [classApi.reducerPath]: classApi.reducer,
+  [lessonApi.reducerPath]: lessonApi.reducer,
+  [enrollApi.reducerPath]: enrollApi.reducer,
+  [paperApi.reducerPath]: paperApi.reducer,
+  [liveApi.reducerPath]: liveApi.reducer,
+  [rankApi.reducerPath]: rankApi.reducer,
+  [languageApi.reducerPath]: languageApi.reducer,
+  [progressApi.reducerPath]: progressApi.reducer,
+  [recordingApi.reducerPath]: recordingApi.reducer,
+  [reviewApi.reducerPath]: reviewApi.reducer,
+});
+
+const persistedReducer = persistReducer(persistConfig, rootReducer);
+
 const store = configureStore({
-  reducer: {
-    auth: authReducer,
-    user: userReducer,
-    grade: gradeReducer,
-    lesson: lessonReducer,
-    enroll: enrollReducer,
-    recording: recordingReducer,
-    review: reviewReducer,
-
-    liveUi: liveUiReducer,
-    paper: paperReducer,
-    rank: rankReducer,
-    languageSelection: languageSelectionReducer,
-    progress: progressReducer,
-
-    [paymentApi.reducerPath]: paymentApi.reducer,
-    [attemptApi.reducerPath]: attemptApi.reducer,
-    [authApi.reducerPath]: authApi.reducer,
-    [gradeApi.reducerPath]: gradeApi.reducer,
-    [userApi.reducerPath]: userApi.reducer,
-    [classApi.reducerPath]: classApi.reducer,
-    [lessonApi.reducerPath]: lessonApi.reducer,
-    [enrollApi.reducerPath]: enrollApi.reducer,
-    [paperApi.reducerPath]: paperApi.reducer,
-    [liveApi.reducerPath]: liveApi.reducer,
-    [rankApi.reducerPath]: rankApi.reducer,
-    [languageApi.reducerPath]: languageApi.reducer,
-    [progressApi.reducerPath]: progressApi.reducer,
-    [recordingApi.reducerPath]: recordingApi.reducer,
-    [reviewApi.reducerPath]: reviewApi.reducer,
-  },
-
+  reducer: persistedReducer,
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(
+    getDefaultMiddleware({
+      serializableCheck: {
+        ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+      },
+    }).concat(
       authApi.middleware,
       attemptApi.middleware,
       gradeApi.middleware,
@@ -85,4 +138,5 @@ const store = configureStore({
     ),
 });
 
+export const persistor = persistStore(store);
 export default store;

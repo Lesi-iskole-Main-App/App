@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { StatusBar, View, ActivityIndicator } from "react-native";
-import { Provider } from "react-redux";
-import store from "./app/store";
+import { Provider, useSelector } from "react-redux";
+import store, { persistor } from "./app/store";
+import { PersistGate } from "redux-persist/integration/react";
 
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -97,6 +98,107 @@ const PastpaperMenuWithLayout = withSecondLayout(PastpaperMenu);
 
 const ReviewPageWithLayout = withSecondLayout(ReviewPage);
 
+function BootLoader() {
+  return (
+    <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+      <ActivityIndicator size="small" color="#2563EB" />
+    </View>
+  );
+}
+
+function AppNavigator() {
+  const token = useSelector((s) => s?.auth?.token);
+  const user = useSelector((s) => s?.user?.user);
+
+  /**
+   * If token already exists after rehydrate,
+   * app starts directly from Home.
+   * No need to begin again from Splash.
+   */
+  const initialRoute = token && user ? "Home" : "Splash";
+
+  return (
+    <NavigationContainer>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <RootLayout>
+        <Stack.Navigator
+          screenOptions={{ headerShown: false }}
+          initialRouteName={initialRoute}
+        >
+          <Stack.Screen name="Splash" component={SplashScreen} />
+          <Stack.Screen name="LanguageSelect" component={LanguageSelect} />
+          <Stack.Screen name="Sign" component={Sign} />
+          <Stack.Screen name="OTP" component={OTP} />
+          <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
+          <Stack.Screen name="MainSelectgrade" component={MainSelectgrade} />
+
+          <Stack.Screen name="Home" component={HomeWithLayout} />
+          <Stack.Screen name="Live" component={LiveWithLayout} />
+          <Stack.Screen name="LMS" component={LMSWithLayout} />
+          <Stack.Screen name="Result" component={ResultWithLayout} />
+          <Stack.Screen name="Profile" component={ProfileWithLayout} />
+          <Stack.Screen name="PaymentCheckout" component={PaymentCheckout} />
+
+          <Stack.Screen name="Subjects" component={SubjectsWithLayout} />
+          <Stack.Screen
+            name="SubjectWithTeachers"
+            component={SubjectWithTeachersWithLayout}
+          />
+          <Stack.Screen name="IndexNumber" component={IndexNumberWithLayout} />
+          <Stack.Screen name="Lessons" component={LessonsWithLayout} />
+          <Stack.Screen name="ViewLesson" component={ViewLessonWithLayout} />
+
+          <Stack.Screen
+            name="EnrollSubjects"
+            component={EnrollSubjectsWithLayout}
+          />
+
+          <Stack.Screen
+            name="RecordingClasses"
+            component={RecordingClassesWithLayout}
+          />
+          <Stack.Screen
+            name="RecordingLessons"
+            component={RecordingLessonsWithLayout}
+          />
+          <Stack.Screen
+            name="RecordingViewLesson"
+            component={RecordingViewLessonWithLayout}
+          />
+
+          <Stack.Screen name="DailyQuiz" component={DailyQuizWithLayout} />
+          <Stack.Screen
+            name="TopicWisePaper"
+            component={TopicWisePaperWithLayout}
+          />
+          <Stack.Screen name="ModelPaper" component={ModelPaperWithLayout} />
+          <Stack.Screen name="PastPapers" component={PastPapersWithLayout} />
+
+          <Stack.Screen
+            name="DailyQuizMenu"
+            component={DailyQuizMenuWithLayout}
+          />
+          <Stack.Screen
+            name="TopicWiseMenu"
+            component={TopicWiseMenuWithLayout}
+          />
+          <Stack.Screen
+            name="ModelPaperMenu"
+            component={ModelPaperMenuWithLayout}
+          />
+          <Stack.Screen
+            name="PastpaperMenu"
+            component={PastpaperMenuWithLayout}
+          />
+
+          <Stack.Screen name="ReviewPage" component={ReviewPageWithLayout} />
+          <Stack.Screen name="PaperPage" component={PaperPage} />
+        </Stack.Navigator>
+      </RootLayout>
+    </NavigationContainer>
+  );
+}
+
 export default function App() {
   const [fontsReady, setFontsReady] = useState(false);
 
@@ -119,93 +221,14 @@ export default function App() {
   }, []);
 
   if (!fontsReady) {
-    return (
-      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-        <ActivityIndicator size="small" color="#2563EB" />
-      </View>
-    );
+    return <BootLoader />;
   }
 
   return (
     <Provider store={store}>
-      <NavigationContainer>
-        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-        <RootLayout>
-          <Stack.Navigator
-            screenOptions={{ headerShown: false }}
-            initialRouteName="Splash"
-          >
-            <Stack.Screen name="Splash" component={SplashScreen} />
-            <Stack.Screen name="LanguageSelect" component={LanguageSelect} />
-            <Stack.Screen name="Sign" component={Sign} />
-            <Stack.Screen name="OTP" component={OTP} />
-            <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
-            <Stack.Screen name="MainSelectgrade" component={MainSelectgrade} />
-
-            <Stack.Screen name="Home" component={HomeWithLayout} />
-            <Stack.Screen name="Live" component={LiveWithLayout} />
-            <Stack.Screen name="LMS" component={LMSWithLayout} />
-            <Stack.Screen name="Result" component={ResultWithLayout} />
-            <Stack.Screen name="Profile" component={ProfileWithLayout} />
-            <Stack.Screen name="PaymentCheckout" component={PaymentCheckout} />
-
-            <Stack.Screen name="Subjects" component={SubjectsWithLayout} />
-            <Stack.Screen
-              name="SubjectWithTeachers"
-              component={SubjectWithTeachersWithLayout}
-            />
-            <Stack.Screen name="IndexNumber" component={IndexNumberWithLayout} />
-            <Stack.Screen name="Lessons" component={LessonsWithLayout} />
-            <Stack.Screen name="ViewLesson" component={ViewLessonWithLayout} />
-
-            <Stack.Screen
-              name="EnrollSubjects"
-              component={EnrollSubjectsWithLayout}
-            />
-
-            <Stack.Screen
-              name="RecordingClasses"
-              component={RecordingClassesWithLayout}
-            />
-            <Stack.Screen
-              name="RecordingLessons"
-              component={RecordingLessonsWithLayout}
-            />
-            <Stack.Screen
-              name="RecordingViewLesson"
-              component={RecordingViewLessonWithLayout}
-            />
-
-            <Stack.Screen name="DailyQuiz" component={DailyQuizWithLayout} />
-            <Stack.Screen
-              name="TopicWisePaper"
-              component={TopicWisePaperWithLayout}
-            />
-            <Stack.Screen name="ModelPaper" component={ModelPaperWithLayout} />
-            <Stack.Screen name="PastPapers" component={PastPapersWithLayout} />
-
-            <Stack.Screen
-              name="DailyQuizMenu"
-              component={DailyQuizMenuWithLayout}
-            />
-            <Stack.Screen
-              name="TopicWiseMenu"
-              component={TopicWiseMenuWithLayout}
-            />
-            <Stack.Screen
-              name="ModelPaperMenu"
-              component={ModelPaperMenuWithLayout}
-            />
-            <Stack.Screen
-              name="PastpaperMenu"
-              component={PastpaperMenuWithLayout}
-            />
-
-            <Stack.Screen name="ReviewPage" component={ReviewPageWithLayout} />
-            <Stack.Screen name="PaperPage" component={PaperPage} />
-          </Stack.Navigator>
-        </RootLayout>
-      </NavigationContainer>
+      <PersistGate loading={<BootLoader />} persistor={persistor}>
+        <AppNavigator />
+      </PersistGate>
     </Provider>
   );
 }

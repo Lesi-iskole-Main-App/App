@@ -54,10 +54,6 @@ export const authApi = createApi({
       query: () => ({ url: "/signout", method: "POST" }),
     }),
 
-    logout: builder.mutation({
-      query: () => ({ url: "/logout", method: "POST" }),
-    }),
-
     clearStudentSession: builder.mutation({
       query: (body) => ({
         url: "/student/clear-session",
@@ -91,7 +87,6 @@ export const {
   useResendSignupOtpMutation,
   useSigninMutation,
   useSignoutMutation,
-  useLogoutMutation,
   useClearStudentSessionMutation,
   useForgotSendOtpMutation,
   useForgotResetMutation,
