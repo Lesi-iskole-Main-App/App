@@ -52,7 +52,7 @@ export default function BottomNavigationBar() {
           />
 
           <NavItem
-            icon="clipboard"
+            icon="videocam"
             label={t("navEnroll")}
             labelStyle={navFont("bold")}
             onPress={() => navigation.navigate("RecordingClasses")}

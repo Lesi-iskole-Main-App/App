@@ -84,7 +84,7 @@ export default function ReviewComponent() {
       >
         {reviews.map((item, index) => {
           const videoId = getYouTubeId(item.youtubeUrl);
-          const playerHeight = Math.round((CARD_W - 32) * 0.56);
+          const playerHeight = Math.round((CARD_W - 24) * 0.54);
 
           const playerHtml = (() => {
             if (!videoId) return "";
@@ -159,7 +159,9 @@ export default function ReviewComponent() {
                 )}
               </View>
 
-              <Text style={styles.desc}>{item.description}</Text>
+              {!!item.description && (
+                <Text style={styles.desc}>{item.description}</Text>
+              )}
             </View>
           );
         })}
@@ -171,8 +173,8 @@ export default function ReviewComponent() {
 const styles = StyleSheet.create({
   wrapper: {
     width: "100%",
-    marginTop: 10,
-    marginBottom: 10,
+    marginTop: 8,
+    marginBottom: 4,
   },
 
   loadingWrap: {
@@ -196,9 +198,10 @@ const styles = StyleSheet.create({
 
   card: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 22,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
+    borderRadius: 20,
+    paddingTop: 12,
+    paddingHorizontal: 12,
+    paddingBottom: 8,
     shadowColor: "#000",
     shadowOpacity: 0.08,
     shadowRadius: 10,
@@ -207,20 +210,20 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    fontSize: 20,
+    fontSize: 18,
     color: "#0F172A",
-    lineHeight: 26,
-    marginBottom: 14,
+    lineHeight: 22,
+    marginBottom: 10,
     textAlign: "center",
     fontFamily: "AbhayaLibre_700Bold",
   },
 
   playerBox: {
     width: "100%",
-    borderRadius: 16,
+    borderRadius: 14,
     overflow: "hidden",
     backgroundColor: "#0B1220",
-    marginBottom: 14,
+    marginBottom: 8,
   },
 
   webview: {
@@ -241,10 +244,10 @@ const styles = StyleSheet.create({
   },
 
   desc: {
-    fontSize: 15,
+    fontSize: 14,
     color: "#334155",
-    lineHeight: 24,
+    lineHeight: 18,
     textAlign: "left",
-    fontFamily: "AbhayaLibre_400Regular",
+    fontFamily: "AbhayaLibre_700Bold",
   },
 });

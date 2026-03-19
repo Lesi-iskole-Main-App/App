@@ -75,7 +75,6 @@ export default function Profile({ route }) {
               <View style={styles.twoColRow}>
                 <View style={styles.leftCol}>
                   <Text>
-                    {/* ✅ Sinhala font ONLY for label text, not ":" */}
                     <Text style={[styles.label, isSi ? sinFont("bold") : null]}>
                       {t("nameLbl")}
                     </Text>
@@ -106,7 +105,6 @@ export default function Profile({ route }) {
                     <Text style={styles.value}>{district || "—"}</Text>
                   </Text>
 
-                  {/* keep your second line style same */}
                   <Text style={styles.value}>{district ? "" : ""}</Text>
                 </View>
 
@@ -119,7 +117,6 @@ export default function Profile({ route }) {
                     <Text style={styles.value}>{town || "—"}</Text>
                   </Text>
 
-                  {/* ✅ A/L Stream (only if exists) */}
                   {showStream && (
                     <Text style={{ marginTop: 6 }}>
                       <Text
@@ -135,8 +132,9 @@ export default function Profile({ route }) {
               </View>
             </View>
 
-
-            <ReviewComponent/>
+            <View style={styles.reviewWrap}>
+              <ReviewComponent />
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -150,7 +148,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8FAFC",
   },
 
-  // ✅ prevent bottom nav overlay
   content: {
     paddingBottom: TAB_BAR_HEIGHT + 10,
   },
@@ -183,6 +180,11 @@ const styles = StyleSheet.create({
     padding: 16,
   },
 
+  reviewWrap: {
+    width: "100%",
+    marginTop: 14,
+  },
+
   twoColRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -206,7 +208,6 @@ const styles = StyleSheet.create({
     color: "#0F172A",
   },
 
-  /* ✅ Sinhala FMEmanee text */
   sinhalaText: {
     fontFamily: "FMEmanee",
     fontSize: 16,

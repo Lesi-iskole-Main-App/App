@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { useGetStudentLivesQuery } from "../app/liveApi";
+import useT from "../app/i18n/useT";
 
 const formatDate = (iso) => {
   try {
@@ -37,13 +38,33 @@ const formatTime = (iso) => {
   }
 };
 
+const normalizeZoomLinks = (item) => {
+  if (Array.isArray(item?.zoomLinks)) {
+    const cleaned = item.zoomLinks
+      .map((x) => String(x || "").trim())
+      .filter(Boolean);
+
+    if (cleaned.length > 0) return cleaned;
+  }
+
+  const single = String(item?.zoomLink || item?.liveLink || "").trim();
+  return single ? [single] : [];
+};
+
 export default function Live() {
-  const { data = [], isLoading, isFetching, error, refetch } =
-    useGetStudentLivesQuery(undefined, {
-      pollingInterval: 10000,
-      refetchOnFocus: true,
-      refetchOnReconnect: true,
-    });
+  const { t, sinFont } = useT();
+
+  const {
+    data = [],
+    isLoading,
+    isFetching,
+    error,
+    refetch,
+  } = useGetStudentLivesQuery(undefined, {
+    pollingInterval: 10000,
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+  });
 
   useFocusEffect(
     useCallback(() => {
@@ -70,6 +91,12 @@ export default function Live() {
     }
   };
 
+  const pageTitle = t("liveClassesTitle");
+  const liveText = t("liveLabel");
+  const dateTextLabel = t("dateLabel");
+  const timeTextLabel = t("timeLabel");
+  const joinLinkText = t("joinLink");
+
   if (isLoading) {
     return (
       <View style={[styles.screen, styles.centerWrap]}>
@@ -94,7 +121,7 @@ export default function Live() {
 
   return (
     <View style={styles.screen}>
-      <Text style={styles.pageTitle}>Live Classes</Text>
+      <Text style={[styles.pageTitle, sinFont("bold")]}>{pageTitle}</Text>
 
       {isFetching ? (
         <View style={styles.refreshWrap}>
@@ -113,45 +140,45 @@ export default function Live() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContent}
           renderItem={({ item }) => {
-            const title = item?.title || item?.classTitle || "Live Class";
-            const teacher =
-              item?.teacherNames?.[0] ||
-              item?.teacherName ||
-              item?.teacher ||
-              "Teacher";
+            const title = item?.title || item?.classTitle || "Live Classes";
             const dateText = formatDate(item?.scheduledAt);
             const timeText = formatTime(item?.scheduledAt);
             const batchNumber = String(
               item?.batchNumber || item?.classDetails?.batchNumber || ""
             ).trim();
 
+            const zoomLinks = normalizeZoomLinks(item);
+
             return (
               <View style={styles.card}>
                 <View style={styles.headerRow}>
                   <View style={styles.headerLeft}>
-                    <Text style={styles.title} numberOfLines={1}>
+                    <Text style={styles.title} numberOfLines={2}>
                       {title}
-                    </Text>
-                    <Text style={styles.teacher} numberOfLines={1}>
-                      {teacher}
                     </Text>
 
                     {!!batchNumber && (
                       <View style={styles.batchPill}>
-                        <Text style={styles.batchPillText}>Batch {batchNumber}</Text>
+                        <Text style={styles.batchPillText}>
+                          Batch {batchNumber}
+                        </Text>
                       </View>
                     )}
                   </View>
 
                   <View style={styles.liveBadge}>
                     <View style={styles.liveDot} />
-                    <Text style={styles.liveBadgeText}>LIVE</Text>
+                    <Text style={[styles.liveBadgeText, sinFont("bold")]}>
+                      {liveText}
+                    </Text>
                   </View>
                 </View>
 
                 <View style={styles.infoRow}>
                   <View style={styles.infoItem}>
-                    <Text style={styles.infoLabel}>Date</Text>
+                    <Text style={[styles.infoLabel, sinFont("bold")]}>
+                      {dateTextLabel}
+                    </Text>
                     <Text style={styles.infoValue} numberOfLines={1}>
                       {dateText || "-"}
                     </Text>
@@ -160,19 +187,37 @@ export default function Live() {
                   <View style={styles.infoDivider} />
 
                   <View style={styles.infoItem}>
-                    <Text style={styles.infoLabel}>Time</Text>
+                    <Text style={[styles.infoLabel, sinFont("bold")]}>
+                      {timeTextLabel}
+                    </Text>
                     <Text style={styles.infoValue} numberOfLines={1}>
                       {timeText || "-"}
                     </Text>
                   </View>
                 </View>
 
-                <Pressable
-                  style={styles.joinBtn}
-                  onPress={() => onJoin(item?.zoomLink || item?.liveLink)}
-                >
-                  <Text style={styles.joinBtnText}>Join Class</Text>
-                </Pressable>
+                {zoomLinks.length === 1 ? (
+                  <Pressable
+                    style={styles.joinBtn}
+                    onPress={() => onJoin(zoomLinks[0])}
+                  >
+                    <Text style={styles.joinBtnText}>Join Class</Text>
+                  </Pressable>
+                ) : (
+                  <View style={styles.multiBtnWrap}>
+                    {zoomLinks.map((link, index) => (
+                      <Pressable
+                        key={`${item?._id || "live"}-${index}`}
+                        style={styles.multiJoinBtn}
+                        onPress={() => onJoin(link)}
+                      >
+                        <Text style={[styles.multiJoinBtnText, sinFont("bold")]}>
+                          {joinLinkText} {index + 1}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
               </View>
             );
           }}
@@ -281,7 +326,7 @@ const styles = StyleSheet.create({
 
   headerRow: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "space-between",
     gap: 8,
   },
@@ -295,13 +340,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "900",
     color: "#0F172A",
-  },
-
-  teacher: {
-    marginTop: 2,
-    fontSize: 9,
-    fontWeight: "700",
-    color: "#64748B",
   },
 
   batchPill: {
@@ -396,6 +434,27 @@ const styles = StyleSheet.create({
   },
 
   joinBtnText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "900",
+  },
+
+  multiBtnWrap: {
+    marginTop: 2,
+    gap: 8,
+  },
+
+  multiJoinBtn: {
+    width: "100%",
+    backgroundColor: "#DC2626",
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  multiJoinBtnText: {
     color: "#FFFFFF",
     fontSize: 12,
     fontWeight: "900",

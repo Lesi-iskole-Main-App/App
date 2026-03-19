@@ -11,6 +11,7 @@ import { useNavigation } from "@react-navigation/native";
 import { useDispatch } from "react-redux";
 import { useGetRecordingsByClassIdQuery } from "../app/recordingApi";
 import { setSelectedRecordingLesson } from "../app/features/recordingSlice";
+import useT from "../app/i18n/useT";
 
 const PRIMARY = "#1153ec";
 const TAB_BAR_SPACE = 110;
@@ -18,6 +19,7 @@ const TAB_BAR_SPACE = 110;
 export default function RecordingLessons({ route }) {
   const navigation = useNavigation();
   const dispatch = useDispatch();
+  const { t, sinFont } = useT();
 
   const classId = route?.params?.classId || "";
   const className = route?.params?.className || "";
@@ -70,9 +72,16 @@ export default function RecordingLessons({ route }) {
     navigation.navigate("RecordingViewLesson", payload);
   };
 
+  const pageTitle = t("recordingLessonsTitle");
+  const recordingLabel = t("recordingLabel");
+  const descriptionLabel = t("descriptionLabel");
+  const dateLabel = t("dateLabel");
+  const timeLabel = t("timeLabel");
+  const watchRecording = t("watchRecording");
+
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <Text style={styles.pageTitle}>Recording Lessons</Text>
+      <Text style={[styles.pageTitle, sinFont("bold")]}>{pageTitle}</Text>
 
       {!!batchNumber && (
         <View style={styles.batchBanner}>
@@ -107,7 +116,9 @@ export default function RecordingLessons({ route }) {
             <View style={styles.card} key={recording?._id || String(idx)}>
               <View style={styles.headerRow}>
                 <View style={styles.lessonBadge}>
-                  <Text style={styles.lessonBadgeText}>Recording {idx + 1}</Text>
+                  <Text style={[styles.lessonBadgeText, sinFont("bold")]}>
+                    {recordingLabel} {idx + 1}
+                  </Text>
                 </View>
 
                 <View style={styles.metaWrap}>
@@ -119,12 +130,16 @@ export default function RecordingLessons({ route }) {
                   )}
 
                   <View style={styles.metaBox}>
-                    <Text style={styles.metaLabel}>Date</Text>
+                    <Text style={[styles.metaLabel, sinFont("bold")]}>
+                      {dateLabel}
+                    </Text>
                     <Text style={styles.metaValue}>{recording?.date || "-"}</Text>
                   </View>
 
                   <View style={styles.metaBox}>
-                    <Text style={styles.metaLabel}>Time</Text>
+                    <Text style={[styles.metaLabel, sinFont("bold")]}>
+                      {timeLabel}
+                    </Text>
                     <Text style={styles.metaValue}>{recording?.time || "-"}</Text>
                   </View>
                 </View>
@@ -137,7 +152,9 @@ export default function RecordingLessons({ route }) {
               <View style={styles.divider} />
 
               <View style={styles.descCard}>
-                <Text style={styles.descLabel}>Description</Text>
+                <Text style={[styles.descLabel, sinFont("bold")]}>
+                  {descriptionLabel}
+                </Text>
                 <Text style={styles.descText} numberOfLines={3}>
                   {description}
                 </Text>
@@ -151,7 +168,9 @@ export default function RecordingLessons({ route }) {
                   ]}
                   onPress={() => onOpenRecording(recording, idx)}
                 >
-                  <Text style={styles.watchText}>Watch Recording</Text>
+                  <Text style={[styles.watchText, sinFont("bold")]}>
+                    {watchRecording}
+                  </Text>
                 </Pressable>
               </View>
             </View>

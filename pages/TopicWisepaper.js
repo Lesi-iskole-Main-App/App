@@ -1,5 +1,11 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { View, Text, StyleSheet, Pressable, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  ActivityIndicator,
+} from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { useNavigation } from "@react-navigation/native";
 
@@ -8,6 +14,13 @@ import { useGetPublishedPaperSubjectsQuery } from "../app/paperApi";
 import useT from "../app/i18n/useT";
 
 const TAB_BAR_SPACE = 110;
+
+const toTranslationKey = (value) =>
+  String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/\s+/g, "_");
 
 export default function TopicWise() {
   const navigation = useNavigation();
@@ -37,6 +50,19 @@ export default function TopicWise() {
     },
     { skip: !canFetchSubjects }
   );
+
+  const translateStream = (value) => {
+    const raw = String(value || "").trim();
+    if (!raw || !isSi) return raw;
+
+    const key = toTranslationKey(raw);
+    const translated = t(key);
+    return translated && translated !== key ? translated : raw;
+  };
+
+  const translatedStream = useMemo(() => {
+    return translateStream(stream);
+  }, [stream, lang]);
 
   const subjectsToShow = useMemo(() => {
     return Array.isArray(publishedSubjects)
@@ -91,13 +117,12 @@ export default function TopicWise() {
 
   const UI = {
     title: isSi ? t("twTitle") : "Topic wise paper",
-    selectSubject: isSi ? t("selectSubject") : "Select Subject",
     grade: isSi ? t("gradeLbl") : "Grade",
     stream: isSi ? t("streamLbl") : "Stream",
-    subject: isSi ? t("subjectLbl") : "Subject",
     continue: isSi ? t("continueLbl") : "Continue",
-    noAvailableSubjects: isSi ? "විෂයයන් නොමැත" : "No available subjects",
-    loadingSubjects: isSi ? "විෂයයන් පූරණය වෙමින්..." : "Loading subjects...",
+    noPapersNow: isSi
+      ? "මේ මොහොතේ ප්‍රශ්න පත්‍ර ලබා ගත නොහැක"
+      : "Papers are not available right now.",
   };
 
   const onContinue = () => {
@@ -115,7 +140,9 @@ export default function TopicWise() {
   if (!gradeNumber || (isAL && !stream)) {
     return (
       <View style={styles.center}>
-        <Text style={styles.title}>Grade / Stream not selected</Text>
+        <Text style={[styles.title, isSi ? sinFont("bold") : null]}>
+          Grade / Stream not selected
+        </Text>
         <Text style={styles.helperText}>
           Please select your grade (and stream for A/L) first.
         </Text>
@@ -133,7 +160,7 @@ export default function TopicWise() {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#2563EB" />
-        <Text style={styles.helperText}>{UI.loadingSubjects}</Text>
+        <Text style={styles.helperText}>Loading subjects...</Text>
       </View>
     );
   }
@@ -141,8 +168,12 @@ export default function TopicWise() {
   if (error) {
     return (
       <View style={styles.center}>
-        <Text style={styles.title}>Subjects not available</Text>
-        <Text style={styles.helperText}>Check backend published topic wise papers.</Text>
+        <Text style={[styles.title, isSi ? sinFont("bold") : null]}>
+          Subjects not available
+        </Text>
+        <Text style={styles.helperText}>
+          Check backend published topic wise papers.
+        </Text>
       </View>
     );
   }
@@ -150,22 +181,21 @@ export default function TopicWise() {
   return (
     <View style={styles.screen}>
       <View style={styles.card}>
-        <Text style={[styles.title, isSi ? sinFont("bold") : null]}>{UI.title}</Text>
-        <Text style={[styles.subTitle, isSi ? sinFont("regular") : null]}>
-          {UI.selectSubject}
+        <Text style={[styles.title, isSi ? sinFont("bold") : null]}>
+          {UI.title}
         </Text>
 
         <Text style={[styles.infoRow, isSi ? sinFont("regular") : null]}>
           {UI.grade} <Text style={styles.bold}>{gradeNumber}</Text>
         </Text>
 
-        {isAL && (
+        {isAL ? (
           <Text style={[styles.infoRow, isSi ? sinFont("regular") : null]}>
-            {UI.stream} <Text style={styles.bold}>{stream}</Text>
+            {UI.stream} <Text style={styles.bold}>{translatedStream || stream}</Text>
           </Text>
-        )}
+        ) : null}
 
-        <Text style={[styles.label, isSi ? sinFont("bold") : null]}>{UI.subject}</Text>
+        <Text style={styles.label}>Subject</Text>
 
         <View style={styles.pickerWrap}>
           <Picker
@@ -175,14 +205,8 @@ export default function TopicWise() {
             itemStyle={styles.pickerItem}
             dropdownIconColor="#2563EB"
           >
-            <Picker.Item
-              label={
-                subjectsToShow.length
-                  ? UI.selectSubject
-                  : UI.noAvailableSubjects
-              }
-              value=""
-            />
+            <Picker.Item label="Select Subject" value="" />
+
             {subjectsToShow.map((sub) => (
               <Picker.Item
                 key={String(sub._id)}
@@ -194,10 +218,8 @@ export default function TopicWise() {
         </View>
 
         {!subjectsToShow.length ? (
-          <Text style={styles.helperText}>
-            {isAL
-              ? "No available topic wise subjects for this stream."
-              : "No available topic wise subjects for this grade."}
+          <Text style={[styles.helperText, isSi ? sinFont("regular") : null]}>
+            {UI.noPapersNow}
           </Text>
         ) : null}
 
@@ -250,15 +272,6 @@ const styles = StyleSheet.create({
     color: "#0F172A",
     textAlign: "center",
     lineHeight: 30,
-  },
-
-  subTitle: {
-    fontSize: 15,
-    color: "#334155",
-    textAlign: "center",
-    marginTop: 8,
-    marginBottom: 14,
-    lineHeight: 24,
   },
 
   infoRow: {
