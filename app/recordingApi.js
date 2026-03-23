@@ -24,7 +24,9 @@ export const recordingApi = createApi({
         if (Array.isArray(res?.recordings)) return res.recordings;
         return [];
       },
-      providesTags: ["Recording"],
+      providesTags: (result, error, classId) => [
+        { type: "Recording", id: String(classId) },
+      ],
     }),
   }),
 });

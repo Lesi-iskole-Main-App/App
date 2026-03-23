@@ -96,7 +96,9 @@ export default function Lessons({ route }) {
       ) : isLoading ? (
         <View style={styles.stateWrap}>
           <ActivityIndicator size="small" color={PRIMARY} />
-          <Text style={styles.infoText}>Loading lessons...</Text>
+          <Text style={[styles.infoText, labelFontRegular]}>
+            {t("loadingReviewLbl")}
+          </Text>
         </View>
       ) : isError ? (
         <View style={styles.stateWrap}>

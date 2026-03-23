@@ -55,10 +55,10 @@ export default function Live() {
   const { t, sinFont } = useT();
 
   const {
-    data = [],
+    data,
     isLoading,
     isFetching,
-    error,
+    isError,
     refetch,
   } = useGetStudentLivesQuery(undefined, {
     pollingInterval: 10000,
@@ -72,14 +72,24 @@ export default function Live() {
     }, [refetch])
   );
 
+  const safeData = useMemo(() => {
+    if (Array.isArray(data)) return data;
+    if (Array.isArray(data?.items)) return data.items;
+    if (Array.isArray(data?.lives)) return data.lives;
+    return [];
+  }, [data]);
+
   const lives = useMemo(() => {
-    const list = Array.isArray(data) ? data : [];
-    return [...list].sort(
+    return [...safeData].sort(
       (a, b) =>
         new Date(a?.scheduledAt || 0).getTime() -
         new Date(b?.scheduledAt || 0).getTime()
     );
-  }, [data]);
+  }, [safeData]);
+
+  const hasLives = lives.length > 0;
+  const showInitialLoader = isLoading && !hasLives;
+  const showFullError = isError && !hasLives && !isFetching;
 
   const onJoin = async (url) => {
     try {
@@ -97,20 +107,23 @@ export default function Live() {
   const timeTextLabel = t("timeLabel");
   const joinLinkText = t("joinLink");
 
-  if (isLoading) {
+  if (showInitialLoader) {
     return (
       <View style={[styles.screen, styles.centerWrap]}>
         <ActivityIndicator size="large" color="#DC2626" />
-        <Text style={styles.stateText}>Loading live classes...</Text>
+        <Text style={[styles.stateText, sinFont("regular")]}>
+          {t("loadingReviewLbl")}
+        </Text>
       </View>
     );
   }
 
-  if (error) {
+  if (showFullError) {
     return (
       <View style={[styles.screen, styles.centerWrap]}>
         <View style={styles.stateCard}>
-          <Text style={styles.errorTitle}>Failed to load live classes</Text>
+          <Text style={styles.errorTitle}>Unable to load live classes right now</Text>
+          <Text style={styles.errorSubText}>Please try again.</Text>
           <Pressable onPress={refetch} style={styles.retryBtn}>
             <Text style={styles.retryBtnText}>Retry</Text>
           </Pressable>
@@ -125,11 +138,24 @@ export default function Live() {
 
       {isFetching ? (
         <View style={styles.refreshWrap}>
-          <Text style={styles.refreshText}>Refreshing...</Text>
+          <Text style={[styles.refreshText, sinFont("regular")]}>
+            {t("loadingReviewLbl")}
+          </Text>
         </View>
       ) : null}
 
-      {lives.length === 0 ? (
+      {isError && hasLives ? (
+        <View style={styles.inlineErrorWrap}>
+          <Text style={styles.inlineErrorText}>
+            Could not refresh live classes. Showing latest available data.
+          </Text>
+          <Pressable onPress={refetch} style={styles.inlineRetryBtn}>
+            <Text style={styles.inlineRetryText}>Retry</Text>
+          </Pressable>
+        </View>
+      ) : null}
+
+      {!hasLives ? (
         <View style={styles.emptyWrap}>
           <Text style={styles.emptyText}>No live classes right now.</Text>
         </View>
@@ -160,7 +186,7 @@ export default function Live() {
                     {!!batchNumber && (
                       <View style={styles.batchPill}>
                         <Text style={styles.batchPillText}>
-                          Batch {batchNumber}
+                          {`Batch ${batchNumber}`}
                         </Text>
                       </View>
                     )}
@@ -203,7 +229,7 @@ export default function Live() {
                   >
                     <Text style={styles.joinBtnText}>Join Class</Text>
                   </Pressable>
-                ) : (
+                ) : zoomLinks.length > 1 ? (
                   <View style={styles.multiBtnWrap}>
                     {zoomLinks.map((link, index) => (
                       <Pressable
@@ -216,6 +242,10 @@ export default function Live() {
                         </Text>
                       </Pressable>
                     ))}
+                  </View>
+                ) : (
+                  <View style={styles.noLinkWrap}>
+                    <Text style={styles.noLinkText}>No join link available</Text>
                   </View>
                 )}
               </View>
@@ -259,6 +289,42 @@ const styles = StyleSheet.create({
     color: "#64748B",
   },
 
+  inlineErrorWrap: {
+    marginBottom: 10,
+    backgroundColor: "#FFF7ED",
+    borderWidth: 1,
+    borderColor: "#FED7AA",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+
+  inlineErrorText: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#9A3412",
+  },
+
+  inlineRetryBtn: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#FDBA74",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+
+  inlineRetryText: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#C2410C",
+  },
+
   stateText: {
     marginTop: 12,
     fontSize: 13,
@@ -281,6 +347,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "800",
     color: "#0F172A",
+    textAlign: "center",
+  },
+
+  errorSubText: {
+    marginTop: 6,
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#64748B",
     textAlign: "center",
   },
 
@@ -458,5 +532,16 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 12,
     fontWeight: "900",
+  },
+
+  noLinkWrap: {
+    alignItems: "center",
+    paddingVertical: 6,
+  },
+
+  noLinkText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#64748B",
   },
 });

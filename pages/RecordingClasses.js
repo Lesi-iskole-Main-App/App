@@ -26,6 +26,7 @@ const getImageSource = (item) => {
     item?.classImage ||
     item?.classImageUrl ||
     "";
+
   if (uri) return { uri: String(uri) };
   return null;
 };
@@ -74,6 +75,10 @@ export default function RecordingClasses() {
       subject: item?.subject || item?.subjectName || "",
       teacher: teacherText,
       batchNumber: item?.batchNumber || item?.batch || "",
+      streamName:
+        Array.isArray(item?.streams) && item.streams.length > 0
+          ? item.streams.join(", ")
+          : item?.streamName || "",
     };
 
     dispatch(setSelectedRecordingClass(payload));
@@ -90,16 +95,16 @@ export default function RecordingClasses() {
         <View style={styles.stateWrap}>
           <ActivityIndicator size="small" color={PRIMARY} />
           <Text style={[styles.infoText, labelFontRegular]}>
-            {t("loadingApprovedRecordingClasses")}
+            {t("loadingReviewLbl")}
           </Text>
         </View>
       ) : isError ? (
         <View style={styles.stateWrap}>
-          <Text style={styles.errTitle}>
-            Failed to load recording classes
-          </Text>
+          <Text style={styles.errTitle}>Failed to load recording classes</Text>
           <Pressable onPress={() => refetch?.()} style={styles.retryWrap}>
-            <Text style={[styles.tryAgain, labelFontBold]}>{t("retryBtnLbl")}</Text>
+            <Text style={[styles.tryAgain, labelFontBold]}>
+              {t("retryBtnLbl")}
+            </Text>
           </Pressable>
         </View>
       ) : classes.length === 0 ? (
@@ -117,7 +122,9 @@ export default function RecordingClasses() {
           {classes.map((item, idx) => {
             const imageSource = getImageSource(item);
             const className = String(item?.className || `Class ${idx + 1}`);
-            const batchNumber = String(item?.batchNumber || item?.batch || "").trim();
+            const batchNumber = String(
+              item?.batchNumber || item?.batch || ""
+            ).trim();
 
             return (
               <View
@@ -157,7 +164,7 @@ export default function RecordingClasses() {
 
                       {!!batchNumber && (
                         <View style={styles.batchPill}>
-                          <Text style={styles.batchText}>Batch {batchNumber}</Text>
+                          <Text style={styles.batchText}>{`Batch ${batchNumber}`}</Text>
                         </View>
                       )}
                     </View>

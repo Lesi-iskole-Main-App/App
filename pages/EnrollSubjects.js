@@ -19,6 +19,7 @@ import {
   useRequestEnrollMutation,
 } from "../app/enrollApi";
 import ClassEnrollCard from "../components/ClassEnrollCard";
+import useT from "../app/i18n/useT";
 
 const SL_PHONE_REGEX = /^(?:\+94|0)?7\d{8}$/;
 
@@ -45,6 +46,8 @@ const isValidSriLankaMobile = (value) => {
 
 export default function EnrollSubjects({ route }) {
   const navigation = useNavigation();
+  const { t, lang, sinFont } = useT();
+  const isSi = lang === "si";
 
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedClass, setSelectedClass] = useState(null);
@@ -197,7 +200,9 @@ export default function EnrollSubjects({ route }) {
       {isLoading ? (
         <View style={styles.stateWrap}>
           <ActivityIndicator size="small" color="#214294" />
-          <Text style={styles.infoText}>Loading classes...</Text>
+          <Text style={[styles.infoText, isSi ? sinFont("regular") : null]}>
+            {t("loadingReviewLbl")}
+          </Text>
         </View>
       ) : isError ? (
         <View style={styles.stateWrap}>
@@ -275,7 +280,7 @@ export default function EnrollSubjects({ route }) {
 
             {!!selectedClass?.batchNumber && (
               <Text style={styles.modalBatchText}>
-                Batch {selectedClass.batchNumber}
+                {`Batch ${selectedClass.batchNumber}`}
               </Text>
             )}
 
@@ -319,7 +324,9 @@ export default function EnrollSubjects({ route }) {
             </View>
 
             {myReqLoading && (
-              <Text style={styles.syncText}>Syncing status...</Text>
+              <Text style={[styles.syncText, isSi ? sinFont("regular") : null]}>
+                {t("loadingReviewLbl")}
+              </Text>
             )}
           </View>
         </View>

@@ -35,8 +35,10 @@ export const classApi = createApi({
           params.set("streamName", String(streamName).trim());
         }
 
+        const queryString = params.toString();
+
         return {
-          url: `/public?${params.toString()}`,
+          url: queryString ? `/public?${queryString}` : "/public",
           method: "GET",
         };
       },

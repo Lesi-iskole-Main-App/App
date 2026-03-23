@@ -53,7 +53,7 @@ export default function RecordingLessons({ route }) {
 
   const onOpenRecording = (recording, index) => {
     const payload = {
-      recordingId: recording?._id,
+      recordingId: recording?._id || "",
       recordingNo: index + 1,
       title: recording?.title || "",
       date: recording?.date || "",
@@ -85,7 +85,7 @@ export default function RecordingLessons({ route }) {
 
       {!!batchNumber && (
         <View style={styles.batchBanner}>
-          <Text style={styles.batchBannerText}>Batch {batchNumber}</Text>
+          <Text style={styles.batchBannerText}>{`Batch ${batchNumber}`}</Text>
         </View>
       )}
 
@@ -94,7 +94,9 @@ export default function RecordingLessons({ route }) {
       ) : isLoading ? (
         <View style={styles.stateWrap}>
           <ActivityIndicator size="small" color={PRIMARY} />
-          <Text style={styles.infoText}>Loading recordings...</Text>
+          <Text style={[styles.infoText, sinFont("regular")]}>
+            {t("loadingReviewLbl")}
+          </Text>
         </View>
       ) : isError ? (
         <View style={styles.stateWrap}>

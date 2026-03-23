@@ -42,11 +42,6 @@ import { languageApi } from "./languageApi";
 import { recordingApi } from "./recordingApi";
 import { reviewApi } from "./reviewApi";
 
-/**
- * Persist ONLY token from auth slice.
- * This avoids keeping temporary signup / grade-flow values.
- * So your grade flow remains unchanged.
- */
 const authTransform = createTransform(
   (inboundState) => ({
     token: inboundState?.token || null,
@@ -67,10 +62,6 @@ const authTransform = createTransform(
   { whitelist: ["auth"] }
 );
 
-/**
- * Persist user slice as-is.
- * If your user slice has `user` object inside, it will restore that.
- */
 const persistConfig = {
   key: "root",
   storage: AsyncStorage,

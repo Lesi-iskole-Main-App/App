@@ -36,6 +36,7 @@ export default function ClassEnrollCard({
 
   const canView = status === "approved";
   const isPending = status === "pending";
+  const showDemoButton = !canView;
 
   const imageSource = getImageSource(item);
 
@@ -46,7 +47,6 @@ export default function ClassEnrollCard({
     item?.batchNumber || item?.batch || item?.classDetails?.batchNumber || ""
   ).trim();
 
-  // translate only labels
   const statusLabel = canView
     ? t("statusApproved")
     : isPending
@@ -105,15 +105,13 @@ export default function ClassEnrollCard({
               </Text>
             </View>
 
-            <Text style={[styles.className]} numberOfLines={2}>
+            <Text style={styles.className} numberOfLines={2}>
               {className}
             </Text>
 
             {!!batchNumber && (
               <View style={styles.batchPill}>
-                <Text style={[styles.batchPillText]}>
-                  {t("batch")} {batchNumber}
-                </Text>
+                <Text style={styles.batchPillText}>{`Batch ${batchNumber}`}</Text>
               </View>
             )}
 
@@ -136,20 +134,22 @@ export default function ClassEnrollCard({
       <View style={styles.divider} />
 
       <View style={styles.bottomRow}>
-        <Pressable
-          onPress={onPressDemo}
-          style={({ pressed }) => [
-            styles.demoBtn,
-            pressed && styles.actionPressed,
-          ]}
-        >
-          <Text style={[styles.demoBtnText, sinFont("bold")]}>
-            {demoText}
-          </Text>
-          <View style={styles.demoIconChip}>
-            <Ionicons name="play" size={14} color={PRIMARY} />
-          </View>
-        </Pressable>
+        {showDemoButton ? (
+          <Pressable
+            onPress={onPressDemo}
+            style={({ pressed }) => [
+              styles.demoBtn,
+              pressed && styles.actionPressed,
+            ]}
+          >
+            <Text style={[styles.demoBtnText, sinFont("bold")]}>
+              {demoText}
+            </Text>
+            <View style={styles.demoIconChip}>
+              <Ionicons name="play" size={14} color={PRIMARY} />
+            </View>
+          </Pressable>
+        ) : null}
 
         <Pressable
           onPress={canView ? onPressView : onPressEnroll}

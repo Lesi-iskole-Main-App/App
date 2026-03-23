@@ -2,6 +2,7 @@
 // ✅ ONLY 5 labels translated (Result/Total/Correct/Percentage/Best Completed Result)
 // ✅ Sinhala legacy font applied ONLY to those translated labels
 // ✅ All other text stays English (no translation)
+// ✅ Loading text now uses loadingReviewLbl translation key only during loading
 import React from "react";
 import {
   View,
@@ -38,18 +39,18 @@ export default function Result() {
 
   return (
     <View style={styles.screen}>
-      {/* ✅ ONLY this title uses legacy font when Sinhala */}
       <Text style={[styles.pageTitle, LBL_BOLD]}>{UI.pageTitle}</Text>
 
       <ScrollView
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
       >
-        {/* ✅ keep these English always (NO translation, NO legacy font) */}
         {isLoading ? (
           <View style={styles.stateWrap}>
             <ActivityIndicator size="large" color="#214294" />
-            <Text style={styles.infoText}>Loading results...</Text>
+            <Text style={[styles.infoText, LBL_REG]}>
+              {t("loadingReviewLbl")}
+            </Text>
           </View>
         ) : isError ? (
           <View style={styles.stateCard}>
@@ -73,12 +74,10 @@ export default function Result() {
               <View key={paper.paperId} style={styles.paperCard}>
                 <View style={styles.headerRow}>
                   <View style={styles.headerLeft}>
-                    {/* fetched title stays same */}
                     <Text style={styles.paperTitle} numberOfLines={1}>
                       {paper.paperTitle}
                     </Text>
 
-                    {/* fetched subject stays same */}
                     <Text style={styles.subjectText} numberOfLines={1}>
                       {r.subject || "Subject"}
                     </Text>
@@ -92,7 +91,6 @@ export default function Result() {
 
                 <View style={styles.statsBox}>
                   <View style={styles.statItem}>
-                    {/* ✅ ONLY label translated + legacy font */}
                     <Text style={[styles.statLabel, LBL_REG]} numberOfLines={1}>
                       {UI.total}
                     </Text>
@@ -102,7 +100,6 @@ export default function Result() {
                   <View style={styles.statDivider} />
 
                   <View style={styles.statItem}>
-                    {/* ✅ ONLY label translated + legacy font */}
                     <Text style={[styles.statLabel, LBL_REG]} numberOfLines={1}>
                       {UI.correct}
                     </Text>
@@ -112,7 +109,6 @@ export default function Result() {
                   <View style={styles.statDivider} />
 
                   <View style={styles.statItem}>
-                    {/* ✅ ONLY label translated + legacy font */}
                     <Text style={[styles.statLabel, LBL_REG]} numberOfLines={1}>
                       {UI.percentage}
                     </Text>
@@ -121,7 +117,6 @@ export default function Result() {
                 </View>
 
                 <View style={styles.resultFooter}>
-                  {/* ✅ ONLY label translated + legacy font */}
                   <Text style={[styles.resultFooterText, LBL_BOLD]}>
                     {UI.best}
                   </Text>
