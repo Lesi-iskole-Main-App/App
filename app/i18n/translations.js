@@ -41,7 +41,6 @@ export const translations = {
     navResult: "m%;sM,",
     navEnroll: "frfldaâka",
     navLms: "mdvï",
-
     // Useful learning labels
     islandRank: "uq¿ Èjhsfkkau",
     coins: "ldis",
@@ -183,7 +182,13 @@ submitLbl: "wjika lrkak",
     questionLbl2: "m%Yakh",
     correctLbl: "ksjerÈ",
     wrongLbl: "mqyqKqj wjYHhs",
+
+
     loadingReviewLbl: "o;a; ,nd .ksñka",
+
+
+
+
     retryLbl: "kej; W;=;aiy lrkak",
     startingLbl: "mqrjkak...",
     retryBtnLbl: "kej; W;=;aiy lrkak",
