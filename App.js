@@ -7,6 +7,7 @@ import { PersistGate } from "redux-persist/integration/react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import * as Font from "expo-font";
 import { NotoSerifSinhala_700Bold } from "@expo-google-fonts/noto-serif-sinhala";
@@ -150,7 +151,12 @@ function AppNavigator() {
         }
       }}
     >
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <StatusBar
+        translucent
+        backgroundColor="transparent"
+        barStyle="dark-content"
+      />
+
       <RootLayout>
         <Stack.Navigator
           screenOptions={{ headerShown: false }}
@@ -256,10 +262,12 @@ export default function App() {
   }
 
   return (
-    <Provider store={store}>
-      <PersistGate loading={<BootLoader />} persistor={persistor}>
-        <AppNavigator />
-      </PersistGate>
-    </Provider>
+    <SafeAreaProvider>
+      <Provider store={store}>
+        <PersistGate loading={<BootLoader />} persistor={persistor}>
+          <AppNavigator />
+        </PersistGate>
+      </Provider>
+    </SafeAreaProvider>
   );
 }

@@ -204,11 +204,7 @@ export default function PastPapers() {
           {UI.grade} <Text style={styles.bold}>{gradeNumber}</Text>
         </Text>
 
-        {isAL && (
-          <Text style={[styles.infoRow, isSi ? sinFont("regular") : null]}>
-            {UI.stream} <Text style={styles.bold}>{translatedStream || stream}</Text>
-          </Text>
-        )}
+        
 
         <Text style={styles.label}>Subject</Text>
 

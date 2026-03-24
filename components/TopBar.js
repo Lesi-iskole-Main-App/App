@@ -14,24 +14,25 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import {
-  useNavigation,
-  CommonActions,
-} from "@react-navigation/native";
+import { useNavigation, CommonActions } from "@react-navigation/native";
 import { useDispatch } from "react-redux";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import lesiiskole_logo from "../assets/lesiiskole_logo.png";
 
 import { useSignoutMutation } from "../app/authApi";
 import { clearAuth } from "../app/features/authSlice";
 import { setUser } from "../app/features/userSlice";
+import useT from "../app/i18n/useT";
 
 const { width } = Dimensions.get("window");
 
 export default function TopBar() {
   const navigation = useNavigation();
   const dispatch = useDispatch();
-  const t = useRef(new Animated.Value(0)).current;
+  const insets = useSafeAreaInsets();
+  const { t: translate } = useT();
+  const shine = useRef(new Animated.Value(0)).current;
 
   const [signoutApi, { isLoading: loggingOut }] = useSignoutMutation();
   const [busy, setBusy] = useState(false);
@@ -39,14 +40,14 @@ export default function TopBar() {
   useEffect(() => {
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.timing(t, {
+        Animated.timing(shine, {
           toValue: 1,
           duration: 900,
           easing: Easing.inOut(Easing.ease),
           useNativeDriver: true,
         }),
         Animated.delay(9100),
-        Animated.timing(t, {
+        Animated.timing(shine, {
           toValue: 0,
           duration: 0,
           useNativeDriver: true,
@@ -56,9 +57,9 @@ export default function TopBar() {
 
     loop.start();
     return () => loop.stop();
-  }, [t]);
+  }, [shine]);
 
-  const translateX = t.interpolate({
+  const translateX = shine.interpolate({
     inputRange: [0, 1],
     outputRange: [-180, 180],
   });
@@ -96,26 +97,39 @@ export default function TopBar() {
   const handleLogout = () => {
     if (busy || loggingOut) return;
 
+    const logoutTitle = translate("logout") || "Logout";
+    const logoutConfirm =
+      translate("logoutConfirm") || "Are you sure you want to logout?";
+    const cancelText = translate("cancel") || "Cancel";
+
     if (Platform.OS === "web") {
-      const ok = window.confirm("Are you sure you want to logout?");
+      const ok = window.confirm(logoutConfirm);
       if (ok) runLogout();
       return;
     }
 
-    Alert.alert("Logout", "Are you sure you want to logout?", [
+    Alert.alert(logoutTitle, logoutConfirm, [
       {
-        text: "Cancel",
+        text: cancelText,
         style: "cancel",
       },
       {
-        text: "Logout",
+        text: logoutTitle,
         onPress: runLogout,
       },
     ]);
   };
 
   return (
-    <View style={styles.topBar}>
+    <View
+      style={[
+        styles.topBar,
+        {
+          paddingTop: insets.top,
+          height: 70 + insets.top,
+        },
+      ]}
+    >
       <View style={styles.logoWrap}>
         <Image
           source={lesiiskole_logo}
@@ -164,7 +178,9 @@ export default function TopBar() {
           ) : (
             <>
               <Ionicons name="log-out-outline" size={18} color="#FFFFFF" />
-              <Text style={styles.logoutText}>Logout</Text>
+              <Text style={styles.logoutText}>
+                {translate("logout") || "Logout"}
+              </Text>
             </>
           )}
         </Pressable>
@@ -176,7 +192,6 @@ export default function TopBar() {
 const styles = StyleSheet.create({
   topBar: {
     width,
-    height: 70,
     backgroundColor: "#FDFEFF",
     paddingHorizontal: 16,
     flexDirection: "row",

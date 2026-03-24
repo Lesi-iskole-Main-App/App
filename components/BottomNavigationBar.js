@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet, Pressable, Platform } from "react-native";
 import { useNavigation, useNavigationState } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import useT from "../app/i18n/useT";
 
@@ -17,6 +18,7 @@ const HIDE_BOTTOM_BAR_ON = new Set([]);
 export default function BottomNavigationBar() {
   const navigation = useNavigation();
   const { t, navFont } = useT();
+  const insets = useSafeAreaInsets();
 
   const currentRouteName = useNavigationState(
     (state) => state.routes[state.index]?.name
@@ -25,7 +27,14 @@ export default function BottomNavigationBar() {
   if (HIDE_BOTTOM_BAR_ON.has(currentRouteName)) return null;
 
   return (
-    <View style={styles.root}>
+    <View
+      style={[
+        styles.root,
+        {
+          bottom: Math.max(insets.bottom, 10),
+        },
+      ]}
+    >
       <View style={styles.shadowContainer}>
         <View style={styles.bar}>
           <NavItem
@@ -92,7 +101,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 16,
     right: 16,
-    bottom: 16,
     alignItems: "center",
   },
 
