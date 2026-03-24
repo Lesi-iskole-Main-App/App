@@ -29,6 +29,8 @@ import {
   useGetStreamsByGradeNumberQuery,
 } from "../app/gradeApi";
 
+import useT from "../app/i18n/useT";
+
 const getGradeNumber = (g) => {
   if (Number.isFinite(Number(g?.grade))) return Number(g.grade);
   const name = g?.gradeName || g?.name || g?.title || g?.label || "";
@@ -36,14 +38,11 @@ const getGradeNumber = (g) => {
   return m ? Number(m[1]) : null;
 };
 
-const getGradeLabel = (g) => {
-  const num = getGradeNumber(g);
-  if (num != null) return `Grade ${num}`;
-  return g?.gradeName || g?.name || g?.title || g?.label || "—";
-};
-
-const getStreamLabel = (s) => {
-  return s?.label || s?.stream || s?.name || s?.title || "—";
+const normalizeStreamKey = (value) => {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "_");
 };
 
 const getStreamValue = (s) => {
@@ -56,6 +55,8 @@ const hasSubjects = (streamObj) =>
 export default function MainSelectgrade({ navigation }) {
   const dispatch = useDispatch();
   const pendingPhone = useSelector((s) => s?.auth?.pendingPhone);
+  const { t, lang, sinFont } = useT();
+  const isSi = lang === "si";
 
   const [fontsLoaded] = useAlexandria({
     Alexandria_400Regular,
@@ -90,15 +91,73 @@ export default function MainSelectgrade({ navigation }) {
     return [];
   }, [gradesRaw]);
 
+  const translateGradeLabel = (num) => {
+    const n = Number(num);
+    if (!Number.isInteger(n)) return "—";
+
+    if (isSi) {
+      const gradeKeyMap = {
+        1: "grade1",
+        2: "grade2",
+        3: "grade3",
+        4: "grade4",
+        5: "grade5",
+        6: "grade6",
+        7: "grade7",
+        8: "grade8",
+        9: "grade9",
+        10: "grade10",
+        11: "grade11",
+        12: "grade12",
+        13: "grade13",
+      };
+
+      return t(gradeKeyMap[n] || "grade");
+    }
+
+    return `Grade ${n}`;
+  };
+
+  const translateStreamLabel = (streamObj) => {
+    const raw =
+      streamObj?.label ||
+      streamObj?.stream ||
+      streamObj?.name ||
+      streamObj?.title ||
+      "—";
+
+    const key = normalizeStreamKey(
+      streamObj?.stream || streamObj?.value || streamObj?.key || raw
+    );
+
+    const knownStreamKeys = [
+      "physical_science",
+      "biological_science",
+      "commerce",
+      "arts",
+      "technology",
+      "common",
+    ];
+
+    if (isSi && knownStreamKeys.includes(key)) {
+      return t(key);
+    }
+
+    return raw;
+  };
+
   const activeGrades = useMemo(() => {
     return grades
-      .map((g) => ({
-        ...g,
-        _num: getGradeNumber(g),
-        _label: getGradeLabel(g),
-      }))
+      .map((g) => {
+        const num = getGradeNumber(g);
+        return {
+          ...g,
+          _num: num,
+          _label: translateGradeLabel(num),
+        };
+      })
       .filter((g) => Number.isInteger(g._num));
-  }, [grades]);
+  }, [grades, isSi, t]);
 
   const primaryGrades = useMemo(() => {
     return activeGrades
@@ -124,11 +183,21 @@ export default function MainSelectgrade({ navigation }) {
     if (Array.isArray(streamsRaw?.streams)) list = streamsRaw.streams;
     else if (Array.isArray(streamsRaw)) list = streamsRaw;
 
-    return list.filter(hasSubjects);
-  }, [streamsRaw]);
+    return list
+      .filter(hasSubjects)
+      .map((s) => ({
+        ...s,
+        _label: translateStreamLabel(s),
+      }));
+  }, [streamsRaw, isSi, t]);
 
   const cachedGradesKey = useMemo(
-    () => JSON.stringify((grades || []).map((g) => `${g?._id || ""}:${g?.grade || ""}:${g?.flowType || ""}`)),
+    () =>
+      JSON.stringify(
+        (grades || []).map(
+          (g) => `${g?._id || ""}:${g?.grade || ""}:${g?.flowType || ""}`
+        )
+      ),
     [grades]
   );
 
@@ -136,7 +205,7 @@ export default function MainSelectgrade({ navigation }) {
     if (grades.length > 0) {
       dispatch(setGrades(grades));
     }
-  }, [cachedGradesKey, dispatch]); // safe trigger only when fetched grades meaningfully change
+  }, [cachedGradesKey, dispatch, grades]);
 
   if (!fontsLoaded) {
     return (
@@ -195,15 +264,19 @@ export default function MainSelectgrade({ navigation }) {
   };
 
   const pickNormalGrade = (level, gradeObj) => {
-    const gradeLabel = gradeObj?._label || getGradeLabel(gradeObj);
-
-    dispatch(setGradeSelection({ level, grade: gradeLabel, stream: null }));
+    dispatch(
+      setGradeSelection({
+        level,
+        grade: `Grade ${gradeObj?._num}`,
+        stream: null,
+      })
+    );
     closeGradeModal();
     goSignin();
   };
 
   const pickStream = (streamObj) => {
-    const streamLabel = getStreamLabel(streamObj);
+    const streamLabel = streamObj?._label || translateStreamLabel(streamObj);
     const streamValue = getStreamValue(streamObj) || streamLabel;
 
     dispatch(
@@ -246,8 +319,24 @@ export default function MainSelectgrade({ navigation }) {
     >
       <Image source={img} style={styles.cardImg} resizeMode="contain" />
       <View style={styles.cardTextWrap}>
-        <Text style={styles.cardTitle}>{title}</Text>
-        <Text style={styles.cardSubTitle}>{subTitle}</Text>
+        <Text
+          style={[
+            styles.cardTitle,
+            isSi && sinFont("bold"),
+            isSi && styles.siTextFix,
+          ]}
+        >
+          {title}
+        </Text>
+        <Text
+          style={[
+            styles.cardSubTitle,
+            isSi && sinFont("regular"),
+            isSi && styles.siTextFix,
+          ]}
+        >
+          {subTitle}
+        </Text>
       </View>
       <View style={styles.arrowWrap}>
         <Text style={styles.arrowText}>›</Text>
@@ -264,7 +353,11 @@ export default function MainSelectgrade({ navigation }) {
 
   const gradeModalTitle =
     modalType === "primary"
-      ? "Select Grade (Primary)"
+      ? isSi
+        ? t("primaryLevelTitle")
+        : "Select Grade (Primary)"
+      : isSi
+      ? t("secondaryLevelTitle")
       : "Select Grade (Secondary)";
 
   return (
@@ -275,25 +368,33 @@ export default function MainSelectgrade({ navigation }) {
           style={styles.logo}
           resizeMode="contain"
         />
-        <Text style={styles.pageTitle}>Select your grade</Text>
+        <Text
+          style={[
+            styles.pageTitle,
+            isSi && sinFont("bold"),
+            isSi && styles.siTextFix,
+          ]}
+        >
+          {t("mainGradeSelectTitle")}
+        </Text>
 
         <View style={styles.cardsWrap}>
           <GradeCard
             img={primarylevel}
-            title="Primary Level"
-            subTitle="Grades 1 - 5"
+            title={t("primaryLevelTitle")}
+            subTitle={t("primaryLevelSubtitle")}
             level="primary"
           />
           <GradeCard
             img={olstudents}
-            title="Secondary Level"
-            subTitle="Grades 6 - 11"
+            title={t("secondaryLevelTitle")}
+            subTitle={t("secondaryLevelSubtitle")}
             level="secondary"
           />
           <GradeCard
             img={alstudents}
-            title="A/L"
-            subTitle="Show available streams"
+            title={t("alLevelTitle")}
+            subTitle={t("showAvailableStreams")}
             level="al"
           />
         </View>
@@ -302,7 +403,15 @@ export default function MainSelectgrade({ navigation }) {
       <Modal visible={gradeModalOpen} transparent animationType="fade">
         <Pressable style={styles.modalOverlay} onPress={closeGradeModal}>
           <Pressable style={styles.modalCard} onPress={() => {}}>
-            <Text style={styles.modalTitle}>{gradeModalTitle}</Text>
+            <Text
+              style={[
+                styles.modalTitle,
+                isSi && sinFont("bold"),
+                isSi && styles.siTextFix,
+              ]}
+            >
+              {gradeModalTitle}
+            </Text>
 
             {list.length === 0 ? (
               <Text style={{ color: "#64748B", fontWeight: "700" }}>
@@ -315,7 +424,15 @@ export default function MainSelectgrade({ navigation }) {
                   style={styles.modalItem}
                   onPress={() => pickNormalGrade(modalType, g)}
                 >
-                  <Text style={styles.modalItemText}>{g._label}</Text>
+                  <Text
+                    style={[
+                      styles.modalItemText,
+                      isSi && sinFont("bold"),
+                      isSi && styles.siTextFix,
+                    ]}
+                  >
+                    {g._label}
+                  </Text>
                 </Pressable>
               ))
             )}
@@ -326,7 +443,15 @@ export default function MainSelectgrade({ navigation }) {
       <Modal visible={streamModalOpen} transparent animationType="fade">
         <Pressable style={styles.modalOverlay} onPress={closeStreamModal}>
           <Pressable style={styles.modalCard} onPress={() => {}}>
-            <Text style={styles.modalTitle}>Select Stream (A/L)</Text>
+            <Text
+              style={[
+                styles.modalTitle,
+                isSi && sinFont("bold"),
+                isSi && styles.siTextFix,
+              ]}
+            >
+              {isSi ? t("showAvailableStreams") : "Select Stream (A/L)"}
+            </Text>
 
             {streamsLoading ? (
               <View style={{ alignItems: "center", paddingVertical: 14 }}>
@@ -359,11 +484,19 @@ export default function MainSelectgrade({ navigation }) {
             ) : (
               streamsForSelected.map((s) => (
                 <Pressable
-                  key={s?._id || getStreamValue(s) || getStreamLabel(s)}
+                  key={s?._id || getStreamValue(s) || s?._label}
                   style={styles.modalItem}
                   onPress={() => pickStream(s)}
                 >
-                  <Text style={styles.modalItemText}>{getStreamLabel(s)}</Text>
+                  <Text
+                    style={[
+                      styles.modalItemText,
+                      isSi && sinFont("bold"),
+                      isSi && styles.siTextFix,
+                    ]}
+                  >
+                    {s._label}
+                  </Text>
                 </Pressable>
               ))
             )}
@@ -396,6 +529,7 @@ const styles = StyleSheet.create({
     fontSize: 30,
     color: "#214294",
     marginBottom: 25,
+    textAlign: "center",
   },
   cardsWrap: { gap: 16, alignItems: "center" },
 
@@ -470,5 +604,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
     color: "#214294",
+  },
+  siTextFix: {
+    fontFamily: undefined,
+    fontWeight: "normal",
   },
 });

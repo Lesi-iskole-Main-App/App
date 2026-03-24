@@ -41,6 +41,9 @@ export const translations = {
     navResult: "m%;sM,",
     navEnroll: "frfldaâka",
     navLms: "mdvï",
+    recordingsNotAvailableTitle: "mka;s ioyd frfldaäka ;ju ,nd .; fkdyel",
+recordingsNotAvailableDesc:
+  "m,uqj mdvï ioyd ,shdmÈxÑ fjkak bka miqj frfldaäka ,nd .; yelsh'",
     // Useful learning labels
     islandRank: "uq¿ Èjhsfkkau",
     coins: "ldis",
@@ -51,6 +54,15 @@ export const translations = {
     topicWise: "mdvï wkqj",
     modelPapers: "wdo¾Y m%Yak",
     pastPapers: "miq.sh úNd.",
+
+    mainGradeSelectTitle: "fY%a‚h f;darkak",
+primaryLevelTitle: "m%d:ñl fY%a‚",
+secondaryLevelTitle: "oaú;sl fY%a‚",
+alLevelTitle: "Wiia fm<",
+primaryLevelSubtitle: "fY%a‚ ^1 ^-&& ^5&",
+secondaryLevelSubtitle: "fY%a‚ ^6&  - 11",
+showAvailableStreams: "úYh Odrdjka fmkajkak",
+
 
     // Grades
     grade1: "m,uq fY%a‚h",
@@ -84,7 +96,7 @@ export const translations = {
 
     fpSendSubtitle: "lreKdlr ÿrl:k wxlh fyda Bfï,a we;=,;a lrkak",
     fpResetSubtitle: "bÈßhg hdug kj uqrmoh we;=<;a lrkak",
-
+pleaseEnterDataMsg: "lreKdlr o;a; we;=,;a lrkak",
     // ✅ corrected legacy Sinhala text
     fpPlaceholderIdentifier: "ÿrl;k wxlh fyda Bfï,a ,smskh we;=,;a lrkak",
     fpPlaceholderNewPassword: "kj uqrmoh",
@@ -93,7 +105,8 @@ export const translations = {
     fpSendOtpBtn: "fla;h hjkak",
     back: "miqmig hkak",
     fpVerifyOtpAgain: "OTP kej; ;yjqre lrkak",
-
+    demoOnlyNotice:
+  "fuu mka;sh ioyd Tn ;ju ,shdmÈxÑ ù fkdue;'\noeka Tng m,uq mdvu muKla fmkajhs'\n,shdmÈxÑ jQ miq Tng ish¨ mdvï ,nd .; yelsh'",
     // OTP Subtitle (legacy kept)
     otpSubtitle_si:
       "wxl 6lska hq;= fla;hla Tn we;=,;a lr ÿrl;k wxlfha jÜiema .sKqug fyda  Bfï,a ,smskh tjd we;lreKdlr mßlaIdlr n,d we;=,;a lrkak ",
@@ -186,7 +199,7 @@ submitLbl: "wjika lrkak",
 
     loadingReviewLbl: "o;a; ,nd .ksñka",
 
-
+noCompletedPapersYet: "Tn ;ju m%Yak m;% iïmQ¾K lr fkdue;'",
 
 
     retryLbl: "kej; W;=;aiy lrkak",
@@ -207,6 +220,12 @@ submitLbl: "wjika lrkak",
 timeLabel: "fõ,dj",
 joinClass: "iïnkaOfjkak",
 joinLink: "oeka iïnkaOfjkak ,skala",
+studentNamePlaceholder: "ku",
+mobileNumberPlaceholder: "ÿrl:k wxlh",
+enrollHelpText:
+  ",shdmÈxÑùu ioyd Tfí ku iy ÿrl:k wxlh we;=,;a lrkak \nwmf.a ksfhdað;fhla Tn yd iïnkaO jkq we;'",
+invalidPhoneNumberMsg: "lreKdlr j,x.= ÿrl:k wxlhla we;=,;a lrkak",
+noLiveClassesNow: "iÔj mka;s fkdue;",
     nameLbl: "ku",
     gradeLbl: "fY%a‚h",
     districtLbl: "Èia;%slalh",
@@ -319,7 +338,7 @@ liveLabel: "iÔj",
     topicWise: "Topic wise papers",
     modelPapers: "Model papers",
     pastPapers: "Past papers",
-
+invalidPhoneNumberMsg: "Please enter valid phone number",
     // Grades
     grade1: "Grade One",
     grade2: "Grade Two",
@@ -375,13 +394,27 @@ liveLabel: "iÔj",
     liveBadge: "LIVE",
     liveJoin: "Join Class",
 
+recordingsNotAvailableTitle: "Class recordings are not available",
+recordingsNotAvailableDesc:
+  "Please register for lessons firstly. After you can get recordings.",
+
+mainGradeSelectTitle: "Select your grade",
+primaryLevelTitle: "Primary Level",
+secondaryLevelTitle: "Secondary Level",
+alLevelTitle: "A/L",
+primaryLevelSubtitle: "Grades 1 - 5",
+secondaryLevelSubtitle: "Grades 6 - 11",
+showAvailableStreams: "Show available streams",
+
+
+
     // ✅ Completed Papers page (same keys)
     completedPapersTitle: "Completed Papers",
     completedBadge: "Completed",
     paperTypeLabel: "Paper Type",
     completedDate: "Date",
     completedTime: "Time",
-
+pleaseEnterDataMsg: "Please enter data",
     questionLbl: "Question",
 finishLbl: "FINISH",
 nextQuestionLbl: "Next Question",
@@ -436,7 +469,8 @@ recordingClassesTitle: "Recording class",
     paperTypeTopicWise: "Topic wise paper",
     paperTypeModelPaper: "Model paper",
     paperTypePastPaper: "Past paper",
-
+noCompletedPapersYet: "No completed papers yet",
+noLiveClassesNow: "No live classes right now.",
     // ✅ Added only for these pages
     dqTitle: "Daily Quiz",
     twTitle: "Topic Wise Papers",
@@ -447,7 +481,8 @@ recordingClassesTitle: "Recording class",
     gradeLbl: "Grade",
     subjectLbl: "Subject",
     continueLbl: "Continue",
-
+demoOnlyNotice:
+  "This class currently shows only the first lesson as demo.\nAfter enrollment approval, all lessons will be visible.",
   payNow: "PAY NOW",
   attemptNow: "Attempt Now",
   pleaseWait: "Please wait...",

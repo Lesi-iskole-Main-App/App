@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { StatusBar, View, ActivityIndicator } from "react-native";
-import { Provider, useSelector } from "react-redux";
+import { Provider } from "react-redux";
 import store, { persistor } from "./app/store";
 import { PersistGate } from "redux-persist/integration/react";
 
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
@@ -57,6 +58,7 @@ import PaperPage from "./pages/paper";
 import PaymentCheckout from "./pages/PaymentCheckout";
 
 const Stack = createNativeStackNavigator();
+const NAVIGATION_STATE_KEY = "NAVIGATION_STATE_V1";
 
 const withSecondLayout = (ScreenComponent) => {
   return function WrappedScreen(props) {
@@ -107,23 +109,52 @@ function BootLoader() {
 }
 
 function AppNavigator() {
-  const token = useSelector((s) => s?.auth?.token);
-  const user = useSelector((s) => s?.user?.user);
+  const [isNavReady, setIsNavReady] = useState(false);
+  const [initialNavState, setInitialNavState] = useState(undefined);
 
-  /**
-   * If token already exists after rehydrate,
-   * app starts directly from Home.
-   * No need to begin again from Splash.
-   */
-  const initialRoute = token && user ? "Home" : "Splash";
+  useEffect(() => {
+    const restoreNavigationState = async () => {
+      try {
+        const savedState = await AsyncStorage.getItem(NAVIGATION_STATE_KEY);
+
+        if (savedState) {
+          setInitialNavState(JSON.parse(savedState));
+        }
+      } catch (e) {
+        console.log("Navigation restore error:", e);
+      } finally {
+        setIsNavReady(true);
+      }
+    };
+
+    restoreNavigationState();
+  }, []);
+
+  if (!isNavReady) {
+    return <BootLoader />;
+  }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer
+      initialState={initialNavState}
+      onStateChange={async (state) => {
+        try {
+          if (state) {
+            await AsyncStorage.setItem(
+              NAVIGATION_STATE_KEY,
+              JSON.stringify(state)
+            );
+          }
+        } catch (e) {
+          console.log("Navigation persist error:", e);
+        }
+      }}
+    >
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       <RootLayout>
         <Stack.Navigator
           screenOptions={{ headerShown: false }}
-          initialRouteName={initialRoute}
+          initialRouteName="Splash"
         >
           <Stack.Screen name="Splash" component={SplashScreen} />
           <Stack.Screen name="LanguageSelect" component={LanguageSelect} />

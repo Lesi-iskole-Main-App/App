@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   ScrollView,
-  Alert,
 } from "react-native";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 
@@ -39,6 +38,8 @@ const normalizePhone = (value) => {
   return raw;
 };
 
+const digitsOnly = (value) => String(value || "").replace(/\D+/g, "");
+
 const isValidSriLankaMobile = (value) => {
   const raw = String(value || "").replace(/\s+/g, "");
   return SL_PHONE_REGEX.test(raw);
@@ -53,6 +54,7 @@ export default function EnrollSubjects({ route }) {
   const [selectedClass, setSelectedClass] = useState(null);
   const [studentName, setStudentName] = useState("");
   const [studentPhone, setStudentPhone] = useState("");
+  const [modalError, setModalError] = useState("");
 
   const gradeLabel = route?.params?.grade || "A/L";
   const gradeNumberParam = route?.params?.gradeNumber;
@@ -114,25 +116,31 @@ export default function EnrollSubjects({ route }) {
     setSelectedClass(cls);
     setStudentName("");
     setStudentPhone("");
+    setModalError("");
     setModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setModalOpen(false);
+    setSelectedClass(null);
+    setStudentName("");
+    setStudentPhone("");
+    setModalError("");
   };
 
   const submitEnroll = async () => {
     try {
+      setModalError("");
+
       if (!selectedClass?._id) return;
 
-      if (!studentName.trim()) {
-        Alert.alert("Error", "Enter student name");
-        return;
-      }
-
-      if (!studentPhone.trim()) {
-        Alert.alert("Error", "Enter phone number");
+      if (!studentName.trim() || !studentPhone.trim()) {
+        setModalError(t("pleaseEnterDataMsg"));
         return;
       }
 
       if (!isValidSriLankaMobile(studentPhone)) {
-        Alert.alert("Error", "Enter valid Sri Lanka mobile number");
+        setModalError(t("invalidPhoneNumberMsg"));
         return;
       }
 
@@ -142,16 +150,11 @@ export default function EnrollSubjects({ route }) {
         studentPhone: normalizePhone(studentPhone),
       }).unwrap();
 
-      setModalOpen(false);
-      setSelectedClass(null);
+      closeModal();
       refetchMyReq?.();
       refetch?.();
-      Alert.alert("Success", "Request sent!");
     } catch (e) {
-      Alert.alert(
-        "Error",
-        String(e?.data?.message || e?.error || "Request failed")
-      );
+      setModalError(String(e?.data?.message || e?.error || "Request failed"));
     }
   };
 
@@ -284,26 +287,52 @@ export default function EnrollSubjects({ route }) {
               </Text>
             )}
 
+            <Text style={[styles.helpText, isSi ? sinFont("regular") : null]}>
+              {t("enrollHelpText")}
+            </Text>
+
+            {!!modalError && (
+              <View style={styles.errorBox}>
+                <Text style={[styles.errorText, isSi ? sinFont("regular") : null]}>
+                  {modalError}
+                </Text>
+              </View>
+            )}
+
+            <Text style={[styles.fieldLabel, isSi ? sinFont("regular") : null]}>
+              {t("studentNamePlaceholder")}
+            </Text>
             <TextInput
               value={studentName}
-              onChangeText={setStudentName}
-              placeholder="Student Name"
+              onChangeText={(value) => {
+                setStudentName(value);
+                if (modalError) setModalError("");
+              }}
+              placeholder=""
               placeholderTextColor="#94A3B8"
               style={styles.input}
+              autoCapitalize="words"
             />
 
+            <Text style={[styles.fieldLabel, isSi ? sinFont("regular") : null]}>
+              {t("mobileNumberPlaceholder")}
+            </Text>
             <TextInput
               value={studentPhone}
-              onChangeText={setStudentPhone}
-              placeholder="Sri Lanka Mobile Number"
+              onChangeText={(value) => {
+                setStudentPhone(digitsOnly(value));
+                if (modalError) setModalError("");
+              }}
+              placeholder=""
               placeholderTextColor="#94A3B8"
-              keyboardType="phone-pad"
+              keyboardType="number-pad"
               style={styles.input}
+              maxLength={12}
             />
 
             <View style={styles.modalRow}>
               <TouchableOpacity
-                onPress={() => setModalOpen(false)}
+                onPress={closeModal}
                 style={[styles.modalBtn, styles.cancelBtn]}
                 activeOpacity={0.9}
                 disabled={submitting}
@@ -450,8 +479,41 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
-  input: {
+  helpText: {
+    marginTop: 10,
+    textAlign: "center",
+    color: "#64748B",
+    fontSize: 12,
+    lineHeight: 18,
+    fontWeight: "600",
+  },
+
+  errorBox: {
     marginTop: 12,
+    backgroundColor: "#FEF2F2",
+    borderWidth: 1,
+    borderColor: "#FECACA",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+
+  errorText: {
+    color: "#B91C1C",
+    fontSize: 12,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+
+  fieldLabel: {
+    marginTop: 12,
+    marginBottom: 6,
+    color: "#334155",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+
+  input: {
     borderWidth: 1,
     borderColor: "#D6DEE8",
     borderRadius: 14,

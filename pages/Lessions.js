@@ -116,9 +116,8 @@ export default function Lessons({ route }) {
               <Text style={[styles.demoNoteTitle, labelFontBold]}>
                 {t("demoLesson")}
               </Text>
-              <Text style={styles.demoNoteText}>
-                This class currently shows only the first lesson as demo.
-                After enrollment approval, all lessons will be visible.
+              <Text style={[styles.demoNoteText, labelFontRegular]}>
+                {t("demoOnlyNotice")}
               </Text>
             </View>
           )}
@@ -202,7 +201,11 @@ export default function Lessons({ route }) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: "#F1F5F9" },
-  content: { paddingHorizontal: 14, paddingTop: 14, paddingBottom: TAB_BAR_SPACE },
+  content: {
+    paddingHorizontal: 14,
+    paddingTop: 14,
+    paddingBottom: TAB_BAR_SPACE,
+  },
 
   pageTitle: {
     fontSize: 22,

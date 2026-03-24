@@ -52,7 +52,7 @@ const normalizeZoomLinks = (item) => {
 };
 
 export default function Live() {
-  const { t, sinFont } = useT();
+  const { t, sinFont, lang } = useT();
 
   const {
     data,
@@ -157,7 +157,9 @@ export default function Live() {
 
       {!hasLives ? (
         <View style={styles.emptyWrap}>
-          <Text style={styles.emptyText}>No live classes right now.</Text>
+          <Text style={[styles.emptyText, lang === "si" ? sinFont("regular") : null]}>
+            {t("noLiveClassesNow")}
+          </Text>
         </View>
       ) : (
         <FlatList

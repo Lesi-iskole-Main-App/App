@@ -1,8 +1,3 @@
-// pages/Result.js ✅ FULL CODE
-// ✅ ONLY 5 labels translated (Result/Total/Correct/Percentage/Best Completed Result)
-// ✅ Sinhala legacy font applied ONLY to those translated labels
-// ✅ All other text stays English (no translation)
-// ✅ Loading text now uses loadingReviewLbl translation key only during loading
 import React from "react";
 import {
   View,
@@ -24,13 +19,14 @@ export default function Result() {
 
   const isSi = lang === "si";
 
-  // ✅ ONLY THESE 5 labels translated
+  // ✅ ONLY THESE LABELS translated
   const UI = {
     pageTitle: isSi ? t("resultTitle") : "Result",
     total: isSi ? t("resultTotal") : "Total",
     correct: isSi ? t("resultCorrect") : "Correct",
     percentage: isSi ? t("resultPercentage") : "Percentage",
     best: isSi ? t("resultBest") : "Best Completed Result",
+    empty: isSi ? t("noCompletedPapersYet") : "No completed papers yet",
   };
 
   // ✅ Sinhala legacy font ONLY for translated labels
@@ -58,7 +54,7 @@ export default function Result() {
           </View>
         ) : items.length === 0 ? (
           <View style={styles.stateCard}>
-            <Text style={styles.emptyText}>No completed papers yet</Text>
+            <Text style={[styles.emptyText, LBL_REG]}>{UI.empty}</Text>
           </View>
         ) : (
           items.map((paper) => {

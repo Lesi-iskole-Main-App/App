@@ -109,9 +109,11 @@ export default function RecordingClasses() {
         </View>
       ) : classes.length === 0 ? (
         <View style={styles.emptyCard}>
-          <Text style={styles.emptyTitle}>No approved recording classes</Text>
-          <Text style={styles.centerInfo}>
-            No approved recording classes found.
+          <Text style={[styles.emptyTitle, labelFontBold]}>
+            {t("recordingsNotAvailableTitle")}
+          </Text>
+          <Text style={[styles.centerInfo, labelFontRegular]}>
+            {t("recordingsNotAvailableDesc")}
           </Text>
         </View>
       ) : (
@@ -266,6 +268,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "800",
     color: "#0F172A",
+    textAlign: "center",
   },
 
   centerInfo: {
