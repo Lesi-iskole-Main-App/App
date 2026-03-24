@@ -59,8 +59,8 @@ recordingsNotAvailableDesc:
 primaryLevelTitle: "m%d:ñl fY%a‚",
 secondaryLevelTitle: "oaú;sl fY%a‚",
 alLevelTitle: "Wiia fm<",
-primaryLevelSubtitle: "fY%a‚ ^1 ^-&& ^5&",
-secondaryLevelSubtitle: "fY%a‚ ^6&  - 11",
+primaryLevelSubtitle: "fY%a‚ 1 - 5",
+secondaryLevelSubtitle: "fY%a‚ 6  - 11",
 showAvailableStreams: "úYh Odrdjka fmkajkak",
 
 
@@ -109,7 +109,7 @@ pleaseEnterDataMsg: "lreKdlr o;a; we;=,;a lrkak",
   "fuu mka;sh ioyd Tn ;ju ,shdmÈxÑ ù fkdue;'\noeka Tng m,uq mdvu muKla fmkajhs'\n,shdmÈxÑ jQ miq Tng ish¨ mdvï ,nd .; yelsh'",
     // OTP Subtitle (legacy kept)
     otpSubtitle_si:
-      "wxl 6lska hq;= fla;hla Tn we;=,;a lr ÿrl;k wxlfha jÜiema .sKqug fyda  Bfï,a ,smskh tjd we;lreKdlr mßlaIdlr n,d we;=,;a lrkak ",
+      "wxlh yhlska ‍hq;a fla;hla Tfí cx.u ÿrl:khg ,eî we; th w;=,;a lrkak",
 
     // ✅ Result page ONLY (5 keys you gave)
     resultTitle: "m%;sM,",
@@ -361,7 +361,7 @@ invalidPhoneNumberMsg: "Please enter valid phone number",
     selectDistrict: "Select District",
 
     otpSentTitle: "OTP Sent",
-    otpSentMsg: "We sent OTP to your WhatsApp + Email.",
+    otpSentMsg: "We sent OTP to your WhatsApp and mobile number.",
 
     requiredTitle: "Required",
 
@@ -369,10 +369,10 @@ invalidPhoneNumberMsg: "Please enter valid phone number",
     forgotPasswordTitle: "Forgot Password",
     resetPasswordTitle: "Reset Password",
 
-    fpSendSubtitle: "Enter your phone number or email to receive OTP",
+    fpSendSubtitle: "Enter your phone number to receive OTP",
     fpResetSubtitle: "Enter your new password to continue",
 
-    fpPlaceholderIdentifier: "Phone number or email",
+    fpPlaceholderIdentifier: "Phone number ",
     fpPlaceholderNewPassword: "New Password",
     fpPlaceholderConfirmPassword: "Confirm New Password",
 
