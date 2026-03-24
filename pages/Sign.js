@@ -117,6 +117,7 @@ export default function Sign({ navigation, route }) {
   const selectedStream = useSelector((s) => s?.auth?.selectedStream);
 
   const [loading, setLoading] = useState(false);
+  const [pageError, setPageError] = useState("");
 
   const [mode, setMode] = useState(route?.params?.mode || "signup");
   const isSignUp = mode === "signup";
@@ -156,6 +157,10 @@ export default function Sign({ navigation, route }) {
     ],
     []
   );
+
+  const clearError = () => {
+    if (pageError) setPageError("");
+  };
 
   const trySaveSelectionOnce = async (userFromLogin) => {
     if (userFromLogin?.role !== "student") return;
@@ -217,12 +222,13 @@ export default function Sign({ navigation, route }) {
 
   const onContinue = async () => {
     try {
+      clearError();
       setLoading(true);
 
       if (isSignUp) {
         const errMsg = validateSignup();
         if (errMsg) {
-          Alert.alert("Required", errMsg);
+          setPageError(errMsg);
           setLoading(false);
           return;
         }
@@ -274,7 +280,7 @@ export default function Sign({ navigation, route }) {
       navigation.replace("Home");
     } catch (e) {
       const msg = e?.data?.message || e?.message || "Something went wrong";
-      Alert.alert("Error", msg);
+      setPageError(String(msg));
     } finally {
       setLoading(false);
     }
@@ -290,7 +296,10 @@ export default function Sign({ navigation, route }) {
     if (Platform.OS === "android") {
       setBirthdayPickerVisible(false);
     }
-    if (selectedDate) setBirthday(selectedDate);
+    if (selectedDate) {
+      setBirthday(selectedDate);
+      clearError();
+    }
   };
 
   const openBirthdayPicker = () => {
@@ -328,7 +337,10 @@ export default function Sign({ navigation, route }) {
               <Pressable
                 key={v}
                 style={[styles.webPickItem, active && styles.webPickItemActive]}
-                onPress={() => setValue(v)}
+                onPress={() => {
+                  setValue(v);
+                  clearError();
+                }}
               >
                 <Text style={[styles.webPickText, sinFont("bold")]}>{v}</Text>
               </Pressable>
@@ -378,6 +390,7 @@ export default function Sign({ navigation, route }) {
                   }
                   setBirthday(dt);
                   setBirthdayWebModal(false);
+                  clearError();
                 }}
               >
                 <Text style={[styles.webBtnText, sinFont("bold")]}>
@@ -413,6 +426,7 @@ export default function Sign({ navigation, route }) {
                 onPress={() => {
                   setDistrict(d);
                   setDistrictModal(false);
+                  clearError();
                 }}
               >
                 <Text style={[styles.modalItemText, sinFont("bold")]}>
@@ -443,7 +457,10 @@ export default function Sign({ navigation, route }) {
 
           <View style={styles.toggleContainer}>
             <Pressable
-              onPress={() => setMode("signup")}
+              onPress={() => {
+                setMode("signup");
+                clearError();
+              }}
               style={toggleBtnStyle(false)}
             >
               <Text style={[...toggleTextStyle(false), sinFont()]}>
@@ -452,7 +469,10 @@ export default function Sign({ navigation, route }) {
             </Pressable>
 
             <Pressable
-              onPress={() => setMode("signin")}
+              onPress={() => {
+                setMode("signin");
+                clearError();
+              }}
               style={toggleBtnStyle(true)}
             >
               <Text style={[...toggleTextStyle(true), sinFont()]}>
@@ -462,23 +482,38 @@ export default function Sign({ navigation, route }) {
           </View>
 
           <View style={styles.form}>
+            {!!pageError && (
+              <View style={styles.errorBox}>
+                <Text style={styles.errorText}>{pageError}</Text>
+              </View>
+            )}
+
             <Field
               placeholder={t("phoneNumber")}
               placeholderFont={sinFont()}
               value={phoneIn}
-              onChangeText={setPhoneIn}
+              onChangeText={(v) => {
+                setPhoneIn(v);
+                clearError();
+              }}
               keyboardType="phone-pad"
             />
             <Field
               placeholder={t("password")}
               placeholderFont={sinFont()}
               value={passwordIn}
-              onChangeText={setPasswordIn}
+              onChangeText={(v) => {
+                setPasswordIn(v);
+                clearError();
+              }}
               secureTextEntry
             />
 
             <Pressable
-              onPress={() => navigation.navigate("ForgotPassword")}
+              onPress={() => {
+                clearError();
+                navigation.navigate("ForgotPassword");
+              }}
               style={styles.forgotWrap}
             >
               <Text style={[styles.forgotText, sinFont("bold")]}>
@@ -536,7 +571,10 @@ export default function Sign({ navigation, route }) {
 
         <View style={styles.toggleContainer}>
           <Pressable
-            onPress={() => setMode("signup")}
+            onPress={() => {
+              setMode("signup");
+              clearError();
+            }}
             style={toggleBtnStyle(true)}
           >
             <Text style={[...toggleTextStyle(true), sinFont()]}>
@@ -545,7 +583,10 @@ export default function Sign({ navigation, route }) {
           </Pressable>
 
           <Pressable
-            onPress={() => setMode("signin")}
+            onPress={() => {
+              setMode("signin");
+              clearError();
+            }}
             style={toggleBtnStyle(false)}
           >
             <Text style={[...toggleTextStyle(false), sinFont()]}>
@@ -555,23 +596,38 @@ export default function Sign({ navigation, route }) {
         </View>
 
         <View style={styles.form}>
+          {!!pageError && (
+            <View style={styles.errorBox}>
+              <Text style={styles.errorText}>{pageError}</Text>
+            </View>
+          )}
+
           <Field
             placeholder={t("name")}
             placeholderFont={sinFont()}
             value={name}
-            onChangeText={setName}
+            onChangeText={(v) => {
+              setName(v);
+              clearError();
+            }}
           />
 
           <Field
             placeholder={t("phoneNumber")}
             placeholderFont={sinFont()}
             value={phone}
-            onChangeText={setPhone}
+            onChangeText={(v) => {
+              setPhone(v);
+              clearError();
+            }}
             keyboardType="phone-pad"
           />
 
           <Pressable
-            onPress={() => setDistrictModal(true)}
+            onPress={() => {
+              clearError();
+              setDistrictModal(true);
+            }}
             style={[styles.input, { justifyContent: "center" }]}
           >
             <Text
@@ -588,14 +644,20 @@ export default function Sign({ navigation, route }) {
             placeholder={t("town")}
             placeholderFont={sinFont()}
             value={town}
-            onChangeText={setTown}
+            onChangeText={(v) => {
+              setTown(v);
+              clearError();
+            }}
           />
 
           <Field
             placeholder={t("address")}
             placeholderFont={sinFont()}
             value={address}
-            onChangeText={setAddress}
+            onChangeText={(v) => {
+              setAddress(v);
+              clearError();
+            }}
             multiline
             style={{ minHeight: 90, textAlignVertical: "top", paddingTop: 12 }}
           />
@@ -631,7 +693,10 @@ export default function Sign({ navigation, route }) {
             placeholder={t("password")}
             placeholderFont={sinFont()}
             value={passwordUp}
-            onChangeText={setPasswordUp}
+            onChangeText={(v) => {
+              setPasswordUp(v);
+              clearError();
+            }}
             secureTextEntry
           />
 
@@ -639,7 +704,10 @@ export default function Sign({ navigation, route }) {
             placeholder={t("confirmPassword") || "Confirm Password"}
             placeholderFont={sinFont()}
             value={confirmPasswordUp}
-            onChangeText={setConfirmPasswordUp}
+            onChangeText={(v) => {
+              setConfirmPasswordUp(v);
+              clearError();
+            }}
             secureTextEntry
           />
 
@@ -778,6 +846,25 @@ const styles = StyleSheet.create({
   toggleTextInactive: { color: "#64748B" },
 
   form: { width: "100%", gap: 10 },
+
+  errorBox: {
+    width: "100%",
+    backgroundColor: "#FEF2F2",
+    borderWidth: 1,
+    borderColor: "#FECACA",
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 2,
+  },
+
+  errorText: {
+    color: "#B91C1C",
+    fontSize: 13,
+    fontWeight: "700",
+    textAlign: "center",
+    lineHeight: 18,
+  },
 
   inputWrap: {
     width: "100%",

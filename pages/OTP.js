@@ -38,7 +38,7 @@ const maskPhone = (value) => {
 export default function OTP({ navigation, route }) {
   const { lang, t, sinFont } = useT();
 
-  const phoneOrId = route?.params?.phone || "";
+  const phoneOrId = route?.params?.phone || route?.params?.identifier || "";
   const flow = route?.params?.flow || "signup";
   const masked = useMemo(() => maskPhone(phoneOrId), [phoneOrId]);
 
@@ -51,14 +51,11 @@ export default function OTP({ navigation, route }) {
 
   const codeValue = useMemo(() => otp.join(""), [otp]);
 
-  // ✅ USE YOUR EXISTING TRANSLATION KEYS ONLY
   const subtitle = useMemo(() => {
     if (lang === "si") {
-      return (t("otpSubtitle_si") || "")
-        .replace("{masked}", masked);
+      return (t("otpSubtitle_si") || "").replace("{masked}", masked);
     }
-    return (t("otpSubtitle_en") || "")
-      .replace("{masked}", masked);
+    return (t("otpSubtitle_en") || "").replace("{masked}", masked);
   }, [lang, masked, t]);
 
   const onChangeDigit = (text, index) => {
@@ -85,6 +82,13 @@ export default function OTP({ navigation, route }) {
         setOtp(next);
       }
     }
+  };
+
+  const onBackToSign = () => {
+    navigation.replace("Sign", {
+      mode: flow === "forgot" ? "signin" : "signup",
+      phone: phoneOrId,
+    });
   };
 
   const onVerify = async () => {
@@ -125,8 +129,6 @@ export default function OTP({ navigation, route }) {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <View style={styles.container}>
-
-        {/* ✅ ALWAYS ENGLISH */}
         <Text style={styles.title}>OTP Verification</Text>
 
         <Text
@@ -181,6 +183,16 @@ export default function OTP({ navigation, route }) {
           </LinearGradient>
         </Pressable>
 
+        <Pressable onPress={onBackToSign} style={styles.backWrap}>
+          <Text
+            style={[
+              styles.backText,
+              lang === "si" ? sinFont("bold") : null,
+            ]}
+          >
+            {t("back")}
+          </Text>
+        </Pressable>
       </View>
     </KeyboardAvoidingView>
   );
@@ -244,5 +256,15 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 15,
     fontWeight: "900",
+  },
+  backWrap: {
+    marginTop: 14,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  backText: {
+    color: PRIMARY,
+    fontSize: 14,
+    fontWeight: "800",
   },
 });
